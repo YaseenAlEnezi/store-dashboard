@@ -1,14 +1,24 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import "./App.css";
-import Header from "./components/Header";
+import { Outlet } from "react-router-dom";
+import { useStore } from "./utils/stores";
+import { useNavigate } from "react-router-dom";
+import Navbar from "./components/Navbar";
 
 function App() {
+  const navigate = useNavigate();
+  const { user, setUser } = useStore();
+  useEffect(() => {
+    console.log(user);
+    if (!user) setUser({});
+    if (!localStorage.getItem("token")) navigate("/login", { replace: true });
+  }, [user]);
   return (
-    <>
-      <div className="">
-        test
-      </div>
-    </>
+    <div>
+      <Navbar />
+      <div className="w-full h-4" />
+      <Outlet />
+    </div>
   );
 }
 

@@ -3,6 +3,6 @@
 @tailwind utilities;
 
 * {
-  font-family: "Roboto Condensed", sans-serif;
-  font-optical-sizing: auto;
+  font-family: "Noto Kufi Arabic", sans-serif;
+  font-weight: 400;
 }

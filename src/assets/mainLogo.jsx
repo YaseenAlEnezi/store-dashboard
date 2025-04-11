@@ -1,6 +1,6 @@
 import React from "react";
 
-export const MainLogo = ({className, color="rgb(49 46 129)"}) => {
+export const MainLogo = ({ className, color = "#FFED03" }) => {
   return (
     <svg
       width="451"

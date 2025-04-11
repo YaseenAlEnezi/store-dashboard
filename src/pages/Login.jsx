@@ -4,6 +4,7 @@ import { Button, Input } from "antd";
 import { showNotification } from "../utils/Notification";
 import { useStore } from "../utils/stores";
 import { useNavigate } from "react-router-dom";
+import { fetcher } from "../utils/api";
 
 export const Login = () => {
   const [username, setUsername] = useState("");
@@ -23,28 +24,21 @@ export const Login = () => {
       return;
     }
     try {
-      const response = await fetch(
-        "https://api.car5x.com/api/v1/dashboard/login",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            username,
-            password,
-          }),
-        }
-      );
-      let res = await response.json();
+      const res = await fetcher({
+        pathname: "/login",
+        method: "POST",
+        data: {
+          username,
+          password,
+        },
+      });
       if (res.success) {
-        localStorage.setItem("token", res.token);
-        localStorage.setItem("user", JSON.stringify(res.user));
+        localStorage.setItem("token", res?.token);
+        localStorage.setItem("user", JSON.stringify(res?.name));
+        localStorage.setItem("user-id", res?.id);
         setUser({
-          username: res.user.username,
-          name: res.user.name,
-          image: res.user.image,
-          id: res.user.id,
+          name: res?.name,
+          id: res?.id,
         });
         showNotification("success", "تم تسجيل الدخول بنجاح", res.msg);
         navigate("/home");
@@ -62,8 +56,8 @@ export const Login = () => {
   };
   return (
     <div className="w-full h-screen flex justify-center items-center">
-      <div className="w-[400px] h-[450px] rounded-2xl border shadow-2xl shadow-[#3730A3] py-6 flex flex-col justify-start items-center">
-        <Logo className={"w-[200px] h-[100px]"} color="#3730A3" />
+      <div className="w-[400px] h-[450px] rounded-2xl border shadow-2xl shadow-[#FFED03] py-6 flex flex-col justify-start items-center">
+        <Logo className={"w-[200px] h-[100px]"} color="#FFED03" />
         <p className="text-4xl font-bold text-center mt-4 text-gray-900">
           تسجيل الدخول
         </p>

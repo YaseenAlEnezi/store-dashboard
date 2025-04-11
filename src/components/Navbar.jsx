@@ -12,25 +12,23 @@ import { Link } from "react-router-dom";
 import Logo from "../assets/logo.jsx";
 import { Container } from "./Container.jsx";
 import { useStore } from "../utils/stores.js";
-import { useEffect } from "react";
 import { Signout } from "../utils/Signout.js";
 import { useNavigate } from "react-router-dom";
 
 export default function Navbar() {
   const { setUser } = useStore();
-  const data = localStorage.getItem("user");
-  const user = JSON.parse(data);
+  const name = JSON.parse(localStorage.getItem("user"));
   const navigate = useNavigate();
 
   const navItems = [
     {
-      name: "لوحة التحكم",
-      href: "#",
+      name: "المنتجات",
+      href: "/product",
       current: true,
     },
     {
       name: "المستخدمين",
-      href: "/team",
+      href: "/users",
       current: true,
     },
     {
@@ -45,10 +43,6 @@ export default function Navbar() {
     },
   ];
 
-  useEffect(() => {
-    console.log(user);
-  }, [user]);
-
   return (
     <Disclosure as="nav" className="bg-white shadow">
       <Container>
@@ -56,7 +50,7 @@ export default function Navbar() {
           <div className="flex">
             <div className="flex shrink-0 items-center">
               <Link to="/home">
-                <Logo className="w-[80px] h-[80px]" color="rgb(55 48 163)" />
+                <Logo className="w-[80px] h-[80px]" color="#FFED03" />
               </Link>
             </div>
             <div className="hidden sm:ml-6 sm:gap-1 sm:mr-6 sm:flex ">
@@ -88,10 +82,10 @@ export default function Navbar() {
                 <MenuButton className="relative flex rounded-full bg-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-800 focus:ring-offset-2">
                   <div className="relative flex items-center gap-2">
                     <span className="absolute -inset-1.5" />
-                    <span>{user?.name || "User"}</span>
+                    <span>{name || "User"}</span>
                     <img
                       alt=""
-                      src={user?.image || "https://i.pravatar.cc/150"}
+                      src={"https://i.pravatar.cc/150"}
                       className="size-8 rounded-full"
                     />
                   </div>
@@ -99,11 +93,11 @@ export default function Navbar() {
               </div>
               <MenuItems
                 transition
-                className="absolute left-0 z-10 mt-2 w-48 origin-top-right rounded-md bg-white py-1 shadow-md shadow-[#3730A3] ring-1 ring-black/5 transition focus:outline-none data-[closed]:scale-95 data-[closed]:transform data-[closed]:opacity-0 data-[enter]:duration-200 data-[leave]:duration-75 data-[enter]:ease-out data-[leave]:ease-in"
+                className="absolute left-0 z-10 mt-2 w-48 origin-top-right rounded-md bg-white py-1 shadow-md shadow-[#FFED03] ring-1 ring-black/5 transition focus:outline-none data-[closed]:scale-95 data-[closed]:transform data-[closed]:opacity-0 data-[enter]:duration-200 data-[leave]:duration-75 data-[enter]:ease-out data-[leave]:ease-in"
               >
                 <MenuItem>
                   <a
-                    href="#"
+                    onClick={() => navigate("/change-password")}
                     className="block px-4 py-2 text-sm text-gray-700 data-[focus]:bg-gray-100 data-[focus]:outline-none"
                   >
                     تغيير كلمة المرور
@@ -159,13 +153,13 @@ export default function Navbar() {
             <div className="shrink-0">
               <img
                 alt=""
-                src={user?.image || ""}
+                src={"https://i.pravatar.cc/150"}
                 className="size-10 rounded-full"
               />
             </div>
             <div className="mr-3">
               <div className="text-base font-medium text-gray-800">
-                {user?.name || ""}
+                {name || "user"}
               </div>
             </div>
             <button

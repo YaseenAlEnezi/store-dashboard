@@ -8,7 +8,7 @@ export default function Home() {
   return (
     <Container>
       <div className="w-full h-[80vh] flex justify-center items-center overflow-hidden">
-        <Logo className="w-[500px] h-[500px]" color={"#3730A3"} />
+        <Logo className="w-[500px] h-[500px]" color={"#FFED03"} />
       </div>
     </Container>
   );

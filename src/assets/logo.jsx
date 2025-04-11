@@ -2,7 +2,7 @@ import React from "react";
 
 export default function Logo({
   className,
-  color = "#26CE83",
+  color = "#FFED03",
   onMouseEnter,
   onMouseLeave,
 }) {

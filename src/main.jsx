@@ -12,6 +12,8 @@ import { Signout } from "./utils/Signout.js";
 import { ConfigProvider, theme } from "antd";
 import { Users } from "./pages/users/users.jsx";
 import { ProductPage } from "./pages/productPage/product.jsx";
+import { CategoryPage } from "./pages/category/category.jsx";
+import { BrandPage } from "./pages/brandsPage/brands.jsx";
 
 const router = createBrowserRouter([
   {
@@ -33,6 +35,14 @@ const router = createBrowserRouter([
       {
         path: "/product",
         element: <ProductPage />,
+      },
+      {
+        path: "/category",
+        element: <CategoryPage />,
+      },
+      {
+        path: "/brand",
+        element: <BrandPage />,
       },
     ],
   },

@@ -9,8 +9,8 @@ import { MdDeleteOutline } from "react-icons/md";
 import { IoSearchOutline } from "react-icons/io5";
 import { IoIosArrowBack, IoIosArrowForward } from "react-icons/io";
 
-export const ProductPage = () => {
-  const [product, setProduct] = useState([]);
+export const CategoryPage = () => {
+  const [category, setCategory] = useState([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
@@ -36,48 +36,54 @@ export const ProductPage = () => {
     return originalElement;
   };
 
-  const getProducts = async () => {
+  const getCategory = async () => {
     try {
       const response = await fetcher({
-        pathname: `product?page=${page}&pageSize=${pageSize}&search=${search}`,
+        pathname: `category?page=${page}&pageSize=${pageSize}&search=${search}`,
         method: "GET",
         data: null,
         auth: true,
       });
       if (response.success) {
-        setProduct(response.data);
+        setCategory(response.data);
         setTotal(response.total);
       }
     } catch (error) {
-      showNotification("error", "Failed to fetch product", "");
+      showNotification("error", "Failed to fetch category", "");
       console.log(error);
     }
   };
 
-  const deleteProduct = async (id) => {
+  const deleteCategory = async (id) => {
     try {
       const response = await fetcher({
-        pathname: `product/${id}`,
+        pathname: `category/${id}`,
         method: "DELETE",
         data: null,
         auth: true,
       });
-      getProducts();
+      getCategory();
     } catch (error) {
       console.log(error);
     }
   };
 
   useEffect(() => {
-    getProducts();
+    getCategory();
   }, [page, pageSize, search]);
 
   const columns = [
     {
-      title: "ت",
-      dataIndex: "index",
-      key: "index",
-      render: (text, record, index) => index + 1,
+      title: "الصوره",
+      dataIndex: "image",
+      key: "image",
+      render: (text, record) => (
+        <img
+          className="w-12 h-12 object-cover rounded"
+          src={record.image}
+          alt=""
+        />
+      ),
     },
     {
       title: "ألاسم",
@@ -85,44 +91,6 @@ export const ProductPage = () => {
       key: "name",
       render: (text, record) => (
         <Typography.Text strong>{text}</Typography.Text>
-      ),
-    },
-    {
-      title: "الوصف",
-      dataIndex: "shortDescription",
-      key: "shortDescription",
-      render: (text, record) => (
-        <Typography.Text className="text-gray-500">{text}</Typography.Text>
-      ),
-    },
-    {
-      title: "الكمية",
-      dataIndex: "quantity",
-      key: "quantity",
-      render: (text, record) => (
-        <Typography.Text className="text-gray-700" strong>
-          {text}
-        </Typography.Text>
-      ),
-    },
-    {
-      title: "الشراء",
-      dataIndex: "buyingPrice",
-      key: "buyingPrice",
-      render: (text, record) => (
-        <Typography.Text className="text-gray-700" strong>
-          {text.toLocaleString("en")} د.ع
-        </Typography.Text>
-      ),
-    },
-    {
-      title: "البيع",
-      dataIndex: "SellingPrice",
-      key: "SellingPrice",
-      render: (text, record) => (
-        <Typography.Text className="text-gray-700" strong>
-          {text.toLocaleString("en")} د.ع
-        </Typography.Text>
       ),
     },
     {
@@ -134,7 +102,7 @@ export const ProductPage = () => {
           <Popconfirm
             title="هل أنت متأكد؟"
             description="هل أنت متأكد من حذف الحساب؟"
-            onConfirm={() => deleteProduct(record.id)}
+            onConfirm={() => deleteCategory(record.id)}
             okText="حذف"
             cancelText="ألغاء"
           >
@@ -155,7 +123,7 @@ export const ProductPage = () => {
     <div>
       <Container>
         <div className="mb-4 flex justify-between">
-          <h1 className="text-3xl font-bold">المنتجات</h1>
+          <h1 className="text-3xl font-bold">ألاقسام</h1>
           <div className="flex justify-end items-end w-1/4 gap-4">
             <Input
               placeholder="بحث عن مستخدم"
@@ -179,7 +147,7 @@ export const ProductPage = () => {
         <Table
           className="mt-4"
           columns={columns}
-          dataSource={product}
+          dataSource={category}
           pagination={false}
         />
         <Pagination
@@ -193,7 +161,7 @@ export const ProductPage = () => {
         <ModalForm
           showModal={showModal}
           setShowModal={setShowModal}
-          getProducts={getProducts}
+          getCategory={getCategory}
           record={record}
           setRecord={setRecord}
         />

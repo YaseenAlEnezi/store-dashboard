@@ -23,23 +23,38 @@ export default function Navbar() {
 
   const navItems = [
     {
+      name: "الطلبات",
+      href: "/orders",
+      current: true,
+    },
+    {
       name: "المنتجات",
       href: "/product",
       current: true,
     },
     {
-      name: "المستخدمين",
-      href: "/users",
+      name: "الأقسام",
+      href: "/category",
       current: true,
     },
     {
-      name: "التقارير",
-      href: "#",
+      name: "العلامات التجارية",
+      href: "/brand",
+      current: true,
+    },
+    {
+      name: "واجهة العرض",
+      href: "/dashboard",
       current: true,
     },
     {
       name: "الاعدادات",
       href: "#",
+      current: false,
+    },
+    {
+      name: "المستخدمين",
+      href: "/users",
       current: true,
     },
   ];
@@ -47,14 +62,14 @@ export default function Navbar() {
   return (
     <Disclosure as="nav" className="bg-white shadow">
       <Container>
-        <div className="flex h-16 justify-between">
+        <div className="flex h-16 justify-between ">
           <div className="flex">
             <div className="flex shrink-0 items-center">
               <Link to="/home">
-                <Logo className="w-[80px] h-[80px]" color="#FFED03" />
+                <Logo className="w-[75px] h-[75px] p-1 flex items-center justify-center" color="#FFED03" />
               </Link>
             </div>
-            <div className="hidden sm:ml-6 sm:gap-1 sm:mr-6 sm:flex ">
+            <div className="hidden sm:ml-6 sm:gap-4 sm:mr-6 sm:flex w-[100%] flex-row">
               {navItems
                 .filter((item) => item.current === true)
                 .map((item) => (

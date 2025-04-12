@@ -22,8 +22,58 @@ export const ModalForm = ({
   setRecord,
 }) => {
   const [form] = Form.useForm();
+  const [categories, setCategories] = useState([]);
+  const [brands, setBrands] = useState([]);
+  const [selectedCategory, setSelectedCategory] = useState(null);
+  const [selectedBrand, setSelectedBrand] = useState(null);
   const [keywords, setKeywords] = useState([]);
   const [currentKeyword, setCurrentKeyword] = useState("");
+
+  const getCategories = async () => {
+    try {
+      const response = await fetcher({
+        pathname: "category",
+        method: "GET",
+        data: null,
+        auth: true,
+      });
+      if (response.success) {
+        response.data.map((item) => {
+          setCategories((prev) => [
+            ...prev,
+            { label: item.name, value: item.id },
+          ]);
+        });
+      }
+    } catch (error) {
+      showNotification("error", "Failed to fetch categories", "");
+      console.log(error);
+    }
+  };
+
+  const getBrands = async () => {
+    try {
+      const response = await fetcher({
+        pathname: "brand",
+        method: "GET",
+        data: null,
+        auth: true,
+      });
+      if (response.success) {
+        response.data.map((item) => {
+          setBrands((prev) => [...prev, { label: item.name, value: item.id }]);
+        });
+      }
+    } catch (error) {
+      showNotification("error", "Failed to fetch brands", "");
+      console.log(error);
+    }
+  };
+
+  useEffect(() => {
+    getCategories();
+    getBrands();
+  }, []);
 
   const handleAddKeyword = () => {
     const trimmed = currentKeyword.trim();
@@ -39,29 +89,34 @@ export const ModalForm = ({
 
   useEffect(() => {
     if (record) {
-      form.setFieldsValue(record);
+      form.setFieldsValue({
+        ...record,
+        category: record.category?.id || record.categoryID || null,
+        brand: record.brand?.id || record.brandID || null,
+      });
+      setKeywords(record.keywords || []);
     }
-  });
+  }, [record]);
   const onFinish = async (values) => {
     try {
-      values = {
+      const payload = {
         ...values,
-        keywords: keywords,
+        categoryID: values.category,
+        brandID: values.brand,
+        keywords,
       };
-      console.log(values);
 
-      // Send the values to your API
       const res = await fetcher({
         pathname: record ? `product/${record.id}` : "/product",
         method: record ? "PUT" : "POST",
-        data: values,
+        data: payload,
         auth: true,
       });
 
       if (res.success) {
         showNotification(
           "success",
-          record ? "User updated successfully" : "User added successfully",
+          record ? "تم تعديل المنتج بنجاح" : "تم اضافة المنتج بنجاح",
           ""
         );
         form.resetFields();
@@ -69,12 +124,13 @@ export const ModalForm = ({
         setRecord(null);
         getProducts();
       } else {
-        showNotification("error", "Failed to add user", res.message || "");
+        showNotification("error", "فشل في الحفظ", res.message || "");
       }
     } catch (error) {
-      console.error("Error adding user:", error);
+      console.error("Error:", error);
     }
   };
+
 
   return (
     <Modal
@@ -143,22 +199,12 @@ export const ModalForm = ({
           </Col>
           <Col span={12}>
             <Form.Item name="category" label="قسم المنتج">
-              <Select
-                options={[
-                  { value: "transmission", label: "ناقل حركه" },
-                  { value: "engine", label: "محرك" },
-                ]}
-              />
+              <Select options={categories} />
             </Form.Item>
           </Col>
           <Col span={12}>
             <Form.Item name="brand" label="ماركة المنتج">
-              <Select
-                options={[
-                  { value: "nissan", label: "نيسان" },
-                  { value: "toyota", label: "تويوتا" },
-                ]}
-              />
+              <Select options={brands} />
             </Form.Item>
           </Col>
           <Col span={24}>

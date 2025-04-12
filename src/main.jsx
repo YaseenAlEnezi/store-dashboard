@@ -12,8 +12,9 @@ import { Signout } from "./utils/Signout.js";
 import { ConfigProvider, theme } from "antd";
 import { Users } from "./pages/users/users.jsx";
 import { ProductPage } from "./pages/productPage/product.jsx";
-import { CategoryPage } from "./pages/category/category.jsx";
+import { CategoryPage } from "./pages/categoryPage/category.jsx";
 import { BrandPage } from "./pages/brandsPage/brands.jsx";
+import { BannerPage } from "./pages/bannersPage/banners.jsx";
 
 const router = createBrowserRouter([
   {
@@ -22,7 +23,7 @@ const router = createBrowserRouter([
     children: [
       {
         path: "/home",
-        element: <Home />,
+        element: <ProductPage />,
       },
       {
         path: "/about",
@@ -43,6 +44,10 @@ const router = createBrowserRouter([
       {
         path: "/brand",
         element: <BrandPage />,
+      },
+      {
+        path: "/banner",
+        element: <BannerPage />,
       },
     ],
   },

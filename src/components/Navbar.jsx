@@ -44,7 +44,7 @@ export default function Navbar() {
     },
     {
       name: "واجهة العرض",
-      href: "/dashboard",
+      href: "/banner",
       current: true,
     },
     {

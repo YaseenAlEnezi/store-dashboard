@@ -19,6 +19,7 @@ export default function Navbar() {
   const { setUser } = useStore();
   const name = JSON.parse(localStorage.getItem("user"));
   const navigate = useNavigate();
+  const currentRoute = window.location.pathname;
 
   const navItems = [
     {
@@ -60,7 +61,11 @@ export default function Navbar() {
                   <Link
                     key={item.name}
                     to={item.href}
-                    className="flex items-center justify-center border-b-2 border-transparent px-1 pt-1 text-sm font-medium text-gray-500 hover:border-indigo-800 hover:text-gray-700"
+                    className={`flex items-center justify-center border-b-2 border-transparent px-1 pt-1 text-sm font-medium text-gray-500 ${
+                      currentRoute === item.href
+                        ? "border-yellow-500 text-gray-700"
+                        : ""
+                    } hover:border-yellow-500 hover:text-gray-700`}
                   >
                     {item.name}
                   </Link>

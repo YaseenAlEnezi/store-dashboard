@@ -1,5 +1,18 @@
-import { Col, Form, Input, Modal, Row } from "antd";
-import React, { useEffect } from "react";
+import {
+  Button,
+  Col,
+  Form,
+  Input,
+  InputNumber,
+  Modal,
+  Row,
+  Select,
+  Space,
+  Tag,
+} from "antd";
+import React, { useEffect, useState } from "react";
+import { fetcher } from "../../../utils/api";
+import { showNotification } from "../../../utils/Notification";
 
 export const ModalForm = ({
   showModal,
@@ -9,28 +22,39 @@ export const ModalForm = ({
   setRecord,
 }) => {
   const [form] = Form.useForm();
+  const [keywords, setKeywords] = useState([]);
+  const [currentKeyword, setCurrentKeyword] = useState("");
+
+  const handleAddKeyword = () => {
+    const trimmed = currentKeyword.trim();
+    if (trimmed && !keywords.includes(trimmed)) {
+      setKeywords([...keywords, trimmed]);
+      setCurrentKeyword("");
+    }
+  };
+
+  const handleRemoveKeyword = (removedTag) => {
+    setKeywords(keywords.filter((kw) => kw !== removedTag));
+  };
 
   useEffect(() => {
     if (record) {
-      form.setFieldsValue({
-        username: record.username,
-        name: record.name,
-      });
+      form.setFieldsValue(record);
     }
   });
   const onFinish = async (values) => {
     try {
+      values = {
+        ...values,
+        keywords: keywords,
+      };
+      console.log(values);
+
       // Send the values to your API
       const res = await fetcher({
-        pathname: record ? `/admins/${record.id}` : "/register",
+        pathname: record ? `product/${record.id}` : "/product",
         method: record ? "PUT" : "POST",
-        data: record
-          ? { name: values.name, username: values.username }
-          : {
-              name: values.name,
-              username: values.username,
-              password: values.password,
-            },
+        data: values,
         auth: true,
       });
 
@@ -53,10 +77,25 @@ export const ModalForm = ({
   };
 
   return (
-    <Modal open={showModal} width={500}>
-      <Form>
-        <Row gutter={[16, 8]}>
-          <Col span={12}>
+    <Modal
+      open={showModal}
+      footer={null}
+      destroyOnClose
+      centered
+      onCancel={() => {
+        setShowModal(false), setRecord(null), form.resetFields();
+      }}
+      width={600}
+      title={record ? "تعديل منتج" : "اضافة منتج"}
+    >
+      <Form
+        className="mt-[16px] -mb-[20px]"
+        form={form}
+        onFinish={onFinish}
+        layout="vertical"
+      >
+        <Row gutter={16}>
+          <Col span={24}>
             <Form.Item
               name="name"
               label="اسم المنتج"
@@ -65,16 +104,104 @@ export const ModalForm = ({
               <Input />
             </Form.Item>
           </Col>
-          <Col span={12}>
+          <Col span={24}>
             <Form.Item
               name="description"
               label="وصف المنتج"
               rules={[{ required: true, message: "ادخل وصف المنتج" }]}
             >
+              <Input.TextArea />
+            </Form.Item>
+          </Col>
+          <Col span={24}>
+            <Form.Item name="shortDescription" label="وصف قصير">
+              <Input />
+            </Form.Item>
+          </Col>
+          <Col span={8}>
+            <Form.Item name="buyingPrice" label="سعر الشراء">
+              <InputNumber className="w-full" />
+            </Form.Item>
+          </Col>
+          <Col span={8}>
+            <Form.Item
+              name="SellingPrice"
+              label="سعر البيع"
+              rules={[{ required: true, message: "ادخل سعر المنتج" }]}
+            >
+              <InputNumber className="w-full" />
+            </Form.Item>
+          </Col>
+          <Col span={8}>
+            <Form.Item
+              name="quantity"
+              label="كمية المنتج"
+              rules={[{ required: true, message: "ادخل كمية المنتج" }]}
+            >
+              <InputNumber className="w-full" />
+            </Form.Item>
+          </Col>
+          <Col span={12}>
+            <Form.Item name="category" label="قسم المنتج">
+              <Select
+                options={[
+                  { value: "transmission", label: "ناقل حركه" },
+                  { value: "engine", label: "محرك" },
+                ]}
+              />
+            </Form.Item>
+          </Col>
+          <Col span={12}>
+            <Form.Item name="brand" label="ماركة المنتج">
+              <Select
+                options={[
+                  { value: "nissan", label: "نيسان" },
+                  { value: "toyota", label: "تويوتا" },
+                ]}
+              />
+            </Form.Item>
+          </Col>
+          <Col span={24}>
+            <Form.Item name="barcode" label="الباركود">
               <Input />
             </Form.Item>
           </Col>
         </Row>
+        <Row>
+          <Col span={24}>
+            <Form.Item label="كلمات مفتاحية">
+              <div className="flex gap-2 items-center w-full">
+                <Input
+                  className="w-full"
+                  value={currentKeyword}
+                  onChange={(e) => setCurrentKeyword(e.target.value)}
+                  onPressEnter={handleAddKeyword}
+                />
+                <Button type="primary" onClick={handleAddKeyword}>
+                  اضافة
+                </Button>
+              </div>
+              <div className="mt-2">
+                {keywords.map((keyword, index) => (
+                  <Tag
+                    key={index}
+                    closable
+                    color="blue"
+                    className="text-lg"
+                    onClose={() => handleRemoveKeyword(keyword)}
+                  >
+                    {keyword}
+                  </Tag>
+                ))}
+              </div>
+            </Form.Item>
+          </Col>
+        </Row>
+        <div className="flex justify-end my-4">
+          <Button type="primary" htmlType="submit">
+            {record ? "تعديل المنتج" : "اضافة منتج"}
+          </Button>
+        </div>
       </Form>
     </Modal>
   );

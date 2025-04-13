@@ -1,4 +1,5 @@
-export const URL = "http://localhost:3100/api/v1/admin/";
+// export const URL = "http://localhost:3100/api/v1/admin/";
+export const URL = "https://car5x.com/api/v1/admin/";
 
 export const fetcher = async ({ pathname, method, data, auth }) => {
   const res = await fetch(`${URL + pathname}`, {

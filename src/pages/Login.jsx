@@ -25,7 +25,7 @@ export const Login = () => {
     }
     try {
       const res = await fetcher({
-        pathname: "/login",
+        pathname: "login",
         method: "POST",
         data: {
           username,

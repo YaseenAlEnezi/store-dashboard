@@ -4,15 +4,18 @@ import {
   Form,
   Input,
   InputNumber,
+  message,
   Modal,
   Row,
   Select,
   Space,
   Tag,
+  Upload,
 } from "antd";
 import React, { useEffect, useState } from "react";
-import { fetcher } from "../../../utils/api";
+import { fetcher, imageUpload, URL } from "../../../utils/api";
 import { showNotification } from "../../../utils/Notification";
+import { RiImageAddLine } from "react-icons/ri";
 
 export const ModalForm = ({
   showModal,
@@ -28,6 +31,26 @@ export const ModalForm = ({
   const [selectedBrand, setSelectedBrand] = useState(null);
   const [keywords, setKeywords] = useState([]);
   const [currentKeyword, setCurrentKeyword] = useState("");
+  const [image, setImage] = useState(null);
+
+  const createImgProps = () => ({
+    name: "file",
+    multiple: false,
+    maxCount: 1,
+    action: `${URL}upload`,
+    onRemove: async () => {
+      setImage(null);
+    },
+    onChange(info) {
+      const { status, response } = info.file;
+      if (status === "done" && response?.url) {
+        setImage(response.url); // Save uploaded image URL
+        message.success(`${info.file.name} تم رفع الصورة بنجاح`);
+      } else if (status === "error") {
+        message.error(`${info.file.name} فشل رفع الصورة`);
+      }
+    },
+  });
 
   const getCategories = async () => {
     try {
@@ -101,6 +124,7 @@ export const ModalForm = ({
     try {
       const payload = {
         ...values,
+        image, // ✅ add uploaded image URL
         categoryID: values.category,
         brandID: values.brand,
         keywords,
@@ -130,7 +154,6 @@ export const ModalForm = ({
       console.error("Error:", error);
     }
   };
-
 
   return (
     <Modal
@@ -240,6 +263,26 @@ export const ModalForm = ({
                   </Tag>
                 ))}
               </div>
+            </Form.Item>
+          </Col>
+          <Col span={24}>
+            <Form.Item label="صورة المنتج">
+              <Upload.Dragger
+                key="logo"
+                {...createImgProps()}
+                height={100}
+                className="rounded-[12px] border border-[#4b4583] relative"
+              >
+                {image ? (
+                  <img
+                    src={image}
+                    alt="product"
+                    className="max-h-[160px] mx-auto object-contain"
+                  />
+                ) : (
+                  <RiImageAddLine className="text-[#4b4583] text-[30px] absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
+                )}
+              </Upload.Dragger>
             </Form.Item>
           </Col>
         </Row>

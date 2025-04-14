@@ -24,7 +24,7 @@ export const ModalForm = ({
     try {
       // Send the values to your API
       const res = await fetcher({
-        pathname: record ? `/admins/${record.id}` : "/register",
+        pathname: record ? `admins/${record.id}` : "register",
         method: record ? "PUT" : "POST",
         data: record
           ? { name: values.name, username: values.username }

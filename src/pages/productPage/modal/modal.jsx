@@ -13,9 +13,9 @@ import {
   Upload,
 } from "antd";
 import React, { useEffect, useState } from "react";
-import { fetcher, imageUpload, URL } from "../../../utils/api";
+import { fetcher, IMAGE_URL, imageUpload, URL } from "../../../utils/api";
 import { showNotification } from "../../../utils/Notification";
-import { RiImageAddLine } from "react-icons/ri";
+import { RiCloseLine, RiImageAddLine } from "react-icons/ri";
 
 export const ModalForm = ({
   showModal,
@@ -38,14 +38,21 @@ export const ModalForm = ({
     multiple: false,
     maxCount: 1,
     action: `${URL}upload`,
+    beforeUpload: (file) => {
+      const isUnder500KB = file.size / 1024 / 1024 < 0.5;
+      if (!isUnder500KB) {
+        message.error("الصورة يجب أن تكون أقل من 500 كيلوبايت");
+      }
+      return isUnder500KB || Upload.LIST_IGNORE;
+    },
     onRemove: async () => {
       setImage(null);
     },
     onChange(info) {
       const { status, response } = info.file;
-      if (status === "done" && response?.url) {
-        setImage(response.url); // Save uploaded image URL
-        message.success(`${info.file.name} تم رفع الصورة بنجاح`);
+      if (status === "done" && response?.filename) {
+        setImage(response.filename); // Save uploaded image URL
+        message.success(`${response.filename} تم رفع الصورة بنجاح`);
       } else if (status === "error") {
         message.error(`${info.file.name} فشل رفع الصورة`);
       }
@@ -118,13 +125,14 @@ export const ModalForm = ({
         brand: record.brand?.id || record.brandID || null,
       });
       setKeywords(record.keywords || []);
+      setImage(record.thumbnail);
     }
   }, [record]);
   const onFinish = async (values) => {
     try {
       const payload = {
         ...values,
-        image, // ✅ add uploaded image URL
+        thumbnail: image,
         categoryID: values.category,
         brandID: values.brand,
         keywords,
@@ -146,6 +154,7 @@ export const ModalForm = ({
         form.resetFields();
         setShowModal(false);
         setRecord(null);
+        setImage(null);
         getProducts();
       } else {
         showNotification("error", "فشل في الحفظ", res.message || "");
@@ -162,7 +171,10 @@ export const ModalForm = ({
       destroyOnClose
       centered
       onCancel={() => {
-        setShowModal(false), setRecord(null), form.resetFields();
+        setShowModal(false),
+          setRecord(null),
+          setImage(null),
+          form.resetFields();
       }}
       width={600}
       title={record ? "تعديل منتج" : "اضافة منتج"}
@@ -267,22 +279,28 @@ export const ModalForm = ({
           </Col>
           <Col span={24}>
             <Form.Item label="صورة المنتج">
-              <Upload.Dragger
-                key="logo"
-                {...createImgProps()}
-                height={100}
-                className="rounded-[12px] border border-[#4b4583] relative"
-              >
-                {image ? (
+              {image ? (
+                <div className="w-full rounded-[12px] border border-gray-400 relative overflow-hidden">
                   <img
-                    src={image}
-                    alt="product"
-                    className="max-h-[160px] mx-auto object-contain"
+                    src={IMAGE_URL + image}
+                    className="object-cover w-full h-full"
                   />
-                ) : (
-                  <RiImageAddLine className="text-[#4b4583] text-[30px] absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
-                )}
-              </Upload.Dragger>
+
+                  <RiCloseLine
+                    onClick={() => setImage(null)}
+                    className="absolute top-1 right-1 w-[30px] h-[30px] bg-[#FFED03] rounded-lg border border-gray-400 flex items-center justify-center"
+                  />
+                </div>
+              ) : (
+                <Upload.Dragger
+                  key="logo"
+                  {...createImgProps()}
+                  height={100}
+                  className="rounded-[12px] border border-[#000] relative"
+                >
+                  <RiImageAddLine className="text-[#000] text-[30px] absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
+                </Upload.Dragger>
+              )}
             </Form.Item>
           </Col>
         </Row>

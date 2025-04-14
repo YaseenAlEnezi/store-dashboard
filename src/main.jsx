@@ -69,9 +69,15 @@ ReactDOM.createRoot(document.getElementById("root")).render(
   <ConfigProvider
     theme={{
       token: {
-        colorPrimary: "bg-[#FFED03]",
-        colorBgTextHover: "bg-black",
-        colorPrimaryHover: "bg-[#FFED03]",
+        colorPrimary: "#000000",
+        colorPrimaryHover: "#E6D900",
+      },
+      components: {
+        Button: {
+          colorPrimary: "#FFED03",
+          colorPrimaryHover: "#E6D900",
+          colorTextLightSolid: "#000000", 
+        },
       },
     }}
   >

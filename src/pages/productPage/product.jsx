@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { Container } from "../../components/Container";
 import {
   Button,
@@ -8,7 +8,9 @@ import {
   Typography,
   Pagination,
   Avatar,
+  Spin,
 } from "antd";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { showNotification } from "../../utils/Notification";
 import { fetcher, IMAGE_URL } from "../../utils/api";
 import { ModalForm } from "./modal/modal";
@@ -20,12 +22,10 @@ import { ImagesModal } from "./modal/imageModal";
 import { AiOutlinePlus } from "react-icons/ai";
 
 export const ProductPage = () => {
-  const [product, setProduct] = useState([]);
-  const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
-  const [record, setRecord] = useState(null);
+  const [pageSize] = useState(10);
   const [search, setSearch] = useState("");
+  const [record, setRecord] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [showModalImages, setShowModalImages] = useState(false);
 
@@ -47,62 +47,60 @@ export const ProductPage = () => {
     return originalElement;
   };
 
-  const getProducts = async () => {
-    try {
-      const response = await fetcher({
+  const {
+    data: productsResponse,
+    isLoading,
+    refetch,
+  } = useQuery({
+    queryKey: ["products", page, pageSize, search],
+    queryFn: async () => {
+      const res = await fetcher({
         pathname: `product?page=${page}&pageSize=${pageSize}&search=${search}`,
         method: "GET",
-        data: null,
         auth: true,
       });
-      if (response.success) {
-        setProduct(response.data);
-        setTotal(response.total);
-      }
-    } catch (error) {
-      showNotification("error", "Failed to fetch product", "");
-      console.log(error);
-    }
-  };
+      if (!res.success) throw new Error("Failed to fetch products");
+      return res;
+    },
+    keepPreviousData: true,
+  });
 
-  const deleteProduct = async (id) => {
-    try {
-      const response = await fetcher({
+  const deleteMutation = useMutation({
+    mutationFn: async (id) =>
+      await fetcher({
         pathname: `product/${id}`,
         method: "DELETE",
-        data: null,
         auth: true,
-      });
-      getProducts();
-    } catch (error) {
-      console.log(error);
-    }
-  };
+      }),
+    onSuccess: () => {
+      refetch();
+    },
+    onError: (err) => {
+      showNotification("error", "فشل الحذف", err.message);
+    },
+  });
 
-  useEffect(() => {
-    getProducts();
-  }, [page, pageSize, search]);
+  const product = productsResponse?.data || [];
+  const total = productsResponse?.total || 0;
 
   const columns = [
     {
       title: "ت",
       dataIndex: "index",
       key: "index",
-      render: (text, record, index) => index + 1,
+      render: (_, __, index) => index + 1,
     },
     {
       title: "ألاسم",
       dataIndex: "name",
       key: "name",
-      render: (text, record) => (
-        <Typography.Text strong>{text}</Typography.Text>
-      ),
+      render: (text) => <Typography.Text strong>{text}</Typography.Text>,
     },
     {
       title: "الوصف",
       dataIndex: "shortDescription",
       key: "shortDescription",
-      render: (text, record) => (
+      render: (text) => (
         <Typography.Text className="text-gray-500">{text}</Typography.Text>
       ),
     },
@@ -110,7 +108,7 @@ export const ProductPage = () => {
       title: "الكمية",
       dataIndex: "quantity",
       key: "quantity",
-      render: (text, record) => (
+      render: (text) => (
         <Typography.Text className="text-gray-700" strong>
           {text}
         </Typography.Text>
@@ -120,7 +118,7 @@ export const ProductPage = () => {
       title: "الشراء",
       dataIndex: "buyingPrice",
       key: "buyingPrice",
-      render: (text, record) => (
+      render: (text) => (
         <Typography.Text className="text-gray-700" strong>
           {text.toLocaleString("en")} د.ع
         </Typography.Text>
@@ -130,7 +128,7 @@ export const ProductPage = () => {
       title: "البيع",
       dataIndex: "SellingPrice",
       key: "SellingPrice",
-      render: (text, record) => (
+      render: (text) => (
         <Typography.Text className="text-gray-700" strong>
           {text.toLocaleString("en")} د.ع
         </Typography.Text>
@@ -140,39 +138,39 @@ export const ProductPage = () => {
       title: "الصور",
       dataIndex: "images",
       key: "images",
-      render: (text, record) => (
+      render: (_, record) => (
         <div className="grid grid-cols-9 w-full max-w-[250px]">
-          {Array.isArray(record?.images) &&
-            record?.images.map((image, index) => (
-              <Avatar
-                src={IMAGE_URL + image}
-                size="small"
-                className="w-6 h-6 object-cover my-1 border border-gray-200 cursor-pointer rounded"
-              />
-            ))}
+          {record?.images?.map((image, index) => (
+            <Avatar
+              key={index}
+              src={IMAGE_URL + image}
+              size="small"
+              className="w-6 h-6 object-cover my-1 border border-gray-200 cursor-pointer rounded"
+            />
+          ))}
           <Avatar
             size="small"
             onClick={() => {
-              setShowModalImages(true), setRecord(record);
+              setShowModalImages(true);
+              setRecord(record);
             }}
-            className="w-6 h-6 object-cover rounded cursor-pointer"
+            className="w-6 h-6 object-cover my-1 rounded cursor-pointer"
           >
             <AiOutlinePlus className="text-lg" />
           </Avatar>
         </div>
       ),
     },
-
     {
       title: "تعديل",
       dataIndex: "edit",
       key: "edit",
-      render: (text, record) => (
+      render: (_, record) => (
         <div className="flex items-center gap-2">
           <Popconfirm
             title="هل أنت متأكد؟"
             description="هل أنت متأكد من حذف الحساب؟"
-            onConfirm={() => deleteProduct(record.id)}
+            onConfirm={() => deleteMutation.mutate(record.id)}
             okText="حذف"
             cancelText="ألغاء"
           >
@@ -180,7 +178,8 @@ export const ProductPage = () => {
           </Popconfirm>
           <FaRegEdit
             onClick={() => {
-              setShowModal(true), setRecord(record);
+              setShowModal(true);
+              setRecord(record);
             }}
             className="text-blue-500 text-xl cursor-pointer"
           />
@@ -196,7 +195,7 @@ export const ProductPage = () => {
           <h1 className="text-3xl font-bold">المنتجات</h1>
           <div className="flex justify-end items-end w-1/4 gap-4">
             <Input
-              placeholder="بحث عن مستخدم"
+              placeholder="بحث عن منتج"
               type="text"
               prefix={<IoSearchOutline className="text-xl" />}
               value={search}
@@ -214,31 +213,36 @@ export const ProductPage = () => {
             </Button>
           </div>
         </div>
+
         <Table
           className="mt-4"
           columns={columns}
           dataSource={product}
+          loading={isLoading}
           pagination={false}
+          rowKey="id"
         />
         <Pagination
-          defaultCurrent={1}
+          current={page}
           total={total}
-          onChange={(e) => setPage(e)}
+          onChange={setPage}
           showSizeChanger={false}
           itemRender={itemRender}
           className="mt-4"
         />
+
         <ModalForm
           showModal={showModal}
           setShowModal={setShowModal}
-          getProducts={getProducts}
+          getProducts={refetch}
           record={record}
           setRecord={setRecord}
         />
+
         <ImagesModal
           showModal={showModalImages}
           setShowModal={setShowModalImages}
-          getProducts={getProducts}
+          getProducts={refetch}
           record={record}
           setRecord={setRecord}
         />

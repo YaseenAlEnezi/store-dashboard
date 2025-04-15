@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Container } from "../../components/Container";
 import { Button, Table, Input, Popconfirm, Typography, Pagination } from "antd";
 import { showNotification } from "../../utils/Notification";
-import { fetcher } from "../../utils/api";
+import { fetcher, IMAGE_URL } from "../../utils/api";
 import { ModalForm } from "./modal/modal";
 import { FaRegEdit } from "react-icons/fa";
 import { MdDeleteOutline } from "react-icons/md";
@@ -77,13 +77,16 @@ export const CategoryPage = () => {
       title: "الصوره",
       dataIndex: "image",
       key: "image",
-      render: (text, record) => (
-        <img
-          className="w-12 h-12 object-cover rounded"
-          src={record.image}
-          alt=""
-        />
-      ),
+      render: (text, record) =>
+        !record?.img ? (
+          <div className="w-12 h-12 object-cover rounded-md bg-gray-200"></div>
+        ) : (
+          <img
+            className="w-12 h-12 object-cover border border-gray-400 rounded-md"
+            src={IMAGE_URL + record.img}
+            alt=""
+          />
+        ),
     },
     {
       title: "ألاسم",

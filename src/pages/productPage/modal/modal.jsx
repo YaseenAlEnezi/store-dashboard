@@ -16,6 +16,7 @@ import React, { useEffect, useState } from "react";
 import { fetcher, IMAGE_URL, imageUpload, URL } from "../../../utils/api";
 import { showNotification } from "../../../utils/Notification";
 import { RiCloseLine, RiImageAddLine } from "react-icons/ri";
+import { useMutation } from "@tanstack/react-query";
 
 export const ModalForm = ({
   showModal,
@@ -126,40 +127,51 @@ export const ModalForm = ({
       setImage(record.thumbnail);
     }
   }, [record]);
-  const onFinish = async (values) => {
-    try {
-      const payload = {
-        ...values,
-        thumbnail: image,
-        categoryID: values.category,
-        brandID: values.brand,
-        keywords,
-      };
 
-      const res = await fetcher({
-        pathname: record ? `product/${record.id}` : "product",
-        method: record ? "PUT" : "POST",
-        data: payload,
-        auth: true,
-      });
+  const saveProduct = async (values) => {
+    const payload = {
+      ...values,
+      thumbnail: image,
+      categoryID: values.category,
+      brandID: values.brand,
+      keywords,
+    };
 
-      if (res.success) {
-        showNotification(
-          "success",
-          record ? "تم تعديل المنتج بنجاح" : "تم اضافة المنتج بنجاح",
-          ""
-        );
-        form.resetFields();
-        setShowModal(false);
-        setRecord(null);
-        setImage(null);
-        getProducts();
-      } else {
-        showNotification("error", "فشل في الحفظ", res.message || "");
-      }
-    } catch (error) {
-      console.error("Error:", error);
+    const res = await fetcher({
+      pathname: record ? `product/${record.id}` : "product",
+      method: record ? "PUT" : "POST",
+      data: payload,
+      auth: true,
+    });
+
+    if (!res.success) {
+      throw new Error(res.message || "فشل في الحفظ");
     }
+
+    return res;
+  };
+
+  const { mutate, isLoading } = useMutation({
+    mutationFn: saveProduct,
+    onSuccess: (res) => {
+      showNotification(
+        "success",
+        record ? "تم تعديل المنتج بنجاح" : "تم اضافة المنتج بنجاح",
+        ""
+      );
+      form.resetFields();
+      setShowModal(false);
+      setRecord(null);
+      setImage(null);
+      getProducts();
+    },
+    onError: (err) => {
+      showNotification("error", "فشل في الحفظ", err.message);
+    },
+  });
+
+  const onFinish = (values) => {
+    mutate(values);
   };
 
   return (
@@ -308,7 +320,7 @@ export const ModalForm = ({
           </Col>
         </Row>
         <div className="flex justify-end my-4">
-          <Button type="primary" htmlType="submit">
+          <Button type="primary" htmlType="submit" loading={isLoading}>
             {record ? "تعديل المنتج" : "اضافة منتج"}
           </Button>
         </div>

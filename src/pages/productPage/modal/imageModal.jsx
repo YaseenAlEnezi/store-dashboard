@@ -3,6 +3,7 @@ import { Button, Modal, Upload, message } from "antd";
 import { InboxOutlined } from "@ant-design/icons";
 import { URL, IMAGE_URL, fetcher } from "../../../utils/api";
 import { RiCloseLine } from "react-icons/ri";
+import { useMutation } from "@tanstack/react-query";
 
 export const ImagesModal = ({
   showModal,
@@ -15,6 +16,8 @@ export const ImagesModal = ({
   useEffect(() => {
     if (record?.images) {
       setImages(record.images);
+    } else {
+      setImages([]);
     }
   }, [record]);
 
@@ -32,8 +35,8 @@ export const ImagesModal = ({
     }
   };
 
-  const handleRemove = (file) => {
-    setImages((prev) => prev.filter((img) => img !== file.name));
+  const handleRemove = (img) => {
+    setImages((prev) => prev.filter((image) => image !== img));
   };
 
   const beforeUpload = (file) => {
@@ -44,50 +47,52 @@ export const ImagesModal = ({
     return isUnder500KB || Upload.LIST_IGNORE;
   };
 
-  const onOk = async () => {
+  const updateProductImages = async (updatedRecord) => {
+    const res = await fetcher({
+      pathname: `product/${record.id}`,
+      method: "PUT",
+      data: updatedRecord,
+      auth: true,
+    });
+
+    if (!res?.success) {
+      throw new Error("فشل تحديث الصور");
+    }
+
+    return res;
+  };
+
+  const { mutate, isLoading } = useMutation({
+    mutationFn: updateProductImages,
+    onSuccess: () => {
+      message.success("تم تحديث الصور بنجاح");
+      getProducts();
+      setShowModal(false);
+    },
+    onError: (err) => {
+      console.error(err);
+      message.error("حدث خطأ أثناء تحديث المنتج");
+    },
+  });
+
+  const onOk = () => {
     if (!record?.id) {
       message.error("لا يمكن تحديث المنتج بدون معرف صالح");
       return;
     }
 
-    const updatedImages = Array.from(
-      new Set([...(record.images || []), ...images])
-    );
-
     const payload = {
       ...record,
-      images: updatedImages,
+      images: images, // only current images are saved
     };
 
-    try {
-      const res = await fetcher({
-        pathname: `product/${record.id}`,
-        method: "PUT",
-        data: payload,
-        auth: true,
-      });
-
-      if (res?.success) {
-        message.success("تم تحديث الصور بنجاح");
-        getProducts();
-        setShowModal(false);
-      } else {
-        message.error("فشل تحديث الصور");
-      }
-    } catch (err) {
-      console.error(err);
-      message.error("حدث خطأ أثناء تحديث المنتج");
-    }
+    mutate(payload);
   };
 
   const handleCancel = () => {
     setImages([]);
     setShowModal(false);
   };
-
-  useEffect(() => {
-    console.log(images);
-  }, [images]);
 
   return (
     <Modal
@@ -96,6 +101,7 @@ export const ImagesModal = ({
       onCancel={handleCancel}
       width={600}
       onOk={onOk}
+      confirmLoading={isLoading}
     >
       <div
         className="images"
@@ -107,11 +113,10 @@ export const ImagesModal = ({
         }}
       >
         {images.map((img) => (
-          <div className="relative">
+          <div key={img} className="relative">
             <img
               src={`${IMAGE_URL}${img}`}
               alt={img}
-              key={img}
               style={{
                 width: "100px",
                 height: "100px",
@@ -120,7 +125,6 @@ export const ImagesModal = ({
                 border: "1px solid #eee",
               }}
             />
-
             <RiCloseLine
               className="absolute top-0 right-0 text-lg bg-white rounded-lg border cursor-pointer"
               onClick={() => handleRemove(img)}
@@ -132,7 +136,6 @@ export const ImagesModal = ({
           action={`${URL}upload`}
           beforeUpload={beforeUpload}
           onChange={handleUpload}
-          onRemove={handleRemove}
           className="w-[100px] h-[100px]"
           showUploadList={false}
         >

@@ -15,6 +15,9 @@ import { ProductPage } from "./pages/productPage/product.jsx";
 import { CategoryPage } from "./pages/categoryPage/category.jsx";
 import { BrandPage } from "./pages/brandsPage/brands.jsx";
 import { BannerPage } from "./pages/bannersPage/banners.jsx";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+
+const queryClient = new QueryClient();
 
 const router = createBrowserRouter([
   {
@@ -66,21 +69,23 @@ const router = createBrowserRouter([
 ]);
 
 ReactDOM.createRoot(document.getElementById("root")).render(
-  <ConfigProvider
-    theme={{
-      token: {
-        colorPrimary: "#000000",
-        colorPrimaryHover: "#E6D900",
-      },
-      components: {
-        Button: {
-          colorPrimary: "#FFED03",
+  <QueryClientProvider client={queryClient}>
+    <ConfigProvider
+      theme={{
+        token: {
+          colorPrimary: "#000000",
           colorPrimaryHover: "#E6D900",
-          colorTextLightSolid: "#000000", 
         },
-      },
-    }}
-  >
-    <RouterProvider router={router} />
-  </ConfigProvider>
+        components: {
+          Button: {
+            colorPrimary: "#FFED03",
+            colorPrimaryHover: "#E6D900",
+            colorTextLightSolid: "#000000",
+          },
+        },
+      }}
+    >
+      <RouterProvider router={router} />
+    </ConfigProvider>
+  </QueryClientProvider>
 );

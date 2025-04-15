@@ -115,13 +115,24 @@ export const ModalForm = ({
         layout="vertical"
       >
         <Row gutter={16}>
-          <Col span={24}>
+          <Col span={12}>
             <Form.Item
               name="name"
               label="اسم العلامة التجارية"
               rules={[{ required: true, message: "ادخل اسم العلامة التجارية" }]}
             >
               <Input />
+            </Form.Item>
+          </Col>
+          <Col span={12}>
+            <Form.Item
+              name="order"
+              label="ترتيب العلامة التجارية"
+              rules={[
+                { required: true, message: "ادخل ترتيب العلامة التجارية" },
+              ]}
+            >
+              <InputNumber className="w-full" />
             </Form.Item>
           </Col>
         </Row>

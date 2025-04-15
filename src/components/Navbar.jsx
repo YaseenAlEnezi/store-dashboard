@@ -23,6 +23,11 @@ export default function Navbar() {
 
   const navItems = [
     {
+      name: "البيع",
+      href: "/onSite",
+      current: true,
+    },
+    {
       name: "الطلبات",
       href: "/orders",
       current: true,
@@ -66,7 +71,10 @@ export default function Navbar() {
           <div className="flex">
             <div className="flex shrink-0 items-center">
               <Link to="/home">
-                <Logo className="w-[75px] h-[75px] p-1 flex items-center justify-center" color="#FFED03" />
+                <Logo
+                  className="w-[75px] h-[75px] p-1 flex items-center justify-center"
+                  color="#FFED03"
+                />
               </Link>
             </div>
             <div className="hidden sm:ml-6 sm:gap-4 sm:mr-6 sm:flex w-[100%] flex-row">

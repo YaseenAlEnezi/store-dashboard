@@ -11,6 +11,7 @@ import { IoIosArrowBack, IoIosArrowForward } from "react-icons/io";
 
 export const CategoryPage = () => {
   const [category, setCategory] = useState([]);
+  const [loading, setLoading] = useState(false);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
@@ -37,6 +38,7 @@ export const CategoryPage = () => {
   };
 
   const getCategory = async () => {
+    setLoading(true);
     try {
       const response = await fetcher({
         pathname: `category?page=${page}&pageSize=${pageSize}&search=${search}`,
@@ -48,7 +50,9 @@ export const CategoryPage = () => {
         setCategory(response.data);
         setTotal(response.total);
       }
+      setLoading(false);
     } catch (error) {
+      setLoading(false);
       showNotification("error", "Failed to fetch category", "");
       console.log(error);
     }
@@ -95,6 +99,12 @@ export const CategoryPage = () => {
       render: (text, record) => (
         <Typography.Text strong>{text}</Typography.Text>
       ),
+    },
+    {
+      title: "الترتيب",
+      dataIndex: "order",
+      key: "order",
+      render: (text, record) => <Typography.Text>{text}</Typography.Text>,
     },
     {
       title: "تعديل",
@@ -151,6 +161,7 @@ export const CategoryPage = () => {
           className="mt-4"
           columns={columns}
           dataSource={category}
+          loading={loading}
           pagination={false}
         />
         <Pagination

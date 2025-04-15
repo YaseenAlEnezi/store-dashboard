@@ -16,6 +16,7 @@ import { CategoryPage } from "./pages/categoryPage/category.jsx";
 import { BrandPage } from "./pages/brandsPage/brands.jsx";
 import { BannerPage } from "./pages/bannersPage/banners.jsx";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { OnSite } from "./pages/onSite/onSite.jsx";
 
 const queryClient = new QueryClient();
 
@@ -51,6 +52,10 @@ const router = createBrowserRouter([
       {
         path: "/banner",
         element: <BannerPage />,
+      },
+      {
+        path: "/onSite",
+        element: <OnSite />,
       },
     ],
   },

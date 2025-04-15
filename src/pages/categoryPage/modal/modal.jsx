@@ -73,7 +73,9 @@ export const ModalForm = ({
       if (res.success) {
         showNotification(
           "success",
-          record ? "category updated successfully" : "category added successfully",
+          record
+            ? "category updated successfully"
+            : "category added successfully",
           ""
         );
         form.resetFields();
@@ -89,9 +91,7 @@ export const ModalForm = ({
     }
   };
 
-  const modalTitle = record
-    ? "تعديل القسم"
-    : "اضافة القسم"; // Improved readability
+  const modalTitle = record ? "تعديل القسم" : "اضافة القسم"; // Improved readability
 
   return (
     <Modal
@@ -115,13 +115,24 @@ export const ModalForm = ({
         layout="vertical"
       >
         <Row gutter={16}>
-          <Col span={24}>
+          <Col span={12}>
             <Form.Item
               name="name"
               label="اسم القسم"
               rules={[{ required: true, message: "ادخل اسم القسم" }]}
             >
               <Input />
+            </Form.Item>
+          </Col>
+          <Col span={12}>
+            <Form.Item
+              name="order"
+              label="ترتيب العلامة التجارية"
+              rules={[
+                { required: true, message: "ادخل ترتيب العلامة التجارية" },
+              ]}
+            >
+              <InputNumber className="w-full" />
             </Form.Item>
           </Col>
         </Row>

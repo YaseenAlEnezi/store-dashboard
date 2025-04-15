@@ -11,6 +11,7 @@ import { IoIosArrowBack, IoIosArrowForward } from "react-icons/io";
 
 export const BrandPage = () => {
   const [brand, setBrand] = useState([]);
+  const [loading, setLoading] = useState(false);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
@@ -37,6 +38,7 @@ export const BrandPage = () => {
   };
 
   const getBrand = async () => {
+    setLoading(true);
     try {
       const response = await fetcher({
         pathname: `brand?page=${page}&pageSize=${pageSize}&search=${search}`,
@@ -48,7 +50,9 @@ export const BrandPage = () => {
         setBrand(response.data);
         setTotal(response.total);
       }
+      setLoading(false);
     } catch (error) {
+      setLoading(false);
       showNotification("error", "Failed to fetch brand", "");
       console.log(error);
     }
@@ -92,6 +96,14 @@ export const BrandPage = () => {
       title: "ألاسم",
       dataIndex: "name",
       key: "name",
+      render: (text, record) => (
+        <Typography.Text strong>{text}</Typography.Text>
+      ),
+    },
+    {
+      title: "الترتيب",
+      dataIndex: "order",
+      key: "order",
       render: (text, record) => (
         <Typography.Text strong>{text}</Typography.Text>
       ),
@@ -151,6 +163,7 @@ export const BrandPage = () => {
           className="mt-4"
           columns={columns}
           dataSource={brand}
+          loading={loading}
           pagination={false}
         />
         <Pagination

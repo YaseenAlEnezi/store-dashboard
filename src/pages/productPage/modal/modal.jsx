@@ -27,8 +27,6 @@ export const ModalForm = ({
   const [form] = Form.useForm();
   const [categories, setCategories] = useState([]);
   const [brands, setBrands] = useState([]);
-  const [selectedCategory, setSelectedCategory] = useState(null);
-  const [selectedBrand, setSelectedBrand] = useState(null);
   const [keywords, setKeywords] = useState([]);
   const [currentKeyword, setCurrentKeyword] = useState("");
   const [image, setImage] = useState(null);
@@ -139,7 +137,7 @@ export const ModalForm = ({
       };
 
       const res = await fetcher({
-        pathname: record ? `product/${record.id}` : "/product",
+        pathname: record ? `product/${record.id}` : "product",
         method: record ? "PUT" : "POST",
         data: payload,
         auth: true,
@@ -242,8 +240,13 @@ export const ModalForm = ({
               <Select options={brands} />
             </Form.Item>
           </Col>
-          <Col span={24}>
+          <Col span={12}>
             <Form.Item name="barcode" label="الباركود">
+              <Input />
+            </Form.Item>
+          </Col>
+          <Col span={12}>
+            <Form.Item name="location" label="موقع المنتج">
               <Input />
             </Form.Item>
           </Col>

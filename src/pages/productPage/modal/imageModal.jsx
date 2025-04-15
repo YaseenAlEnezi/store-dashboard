@@ -1,21 +1,22 @@
 import React, { useEffect, useState } from "react";
-import { Modal, Upload, message } from "antd";
+import { Button, Modal, Upload, message } from "antd";
 import { InboxOutlined } from "@ant-design/icons";
 import { URL, IMAGE_URL, fetcher } from "../../../utils/api";
+import { RiCloseLine } from "react-icons/ri";
 
 export const ImagesModal = ({
   showModal,
   setShowModal,
   getProducts,
   record,
-  setRecord,
 }) => {
   const [images, setImages] = useState([]);
 
-  // 🧠 Just for debugging or future tracking
   useEffect(() => {
-    console.log("images updated:", images);
-  }, [images]);
+    if (record?.images) {
+      setImages(record.images);
+    }
+  }, [record]);
 
   const handleUpload = (info) => {
     const { status, response } = info.file;
@@ -68,7 +69,6 @@ export const ImagesModal = ({
 
       if (res?.success) {
         message.success("تم تحديث الصور بنجاح");
-        setRecord({ ...record, images: updatedImages });
         getProducts();
         setShowModal(false);
       } else {
@@ -85,27 +85,18 @@ export const ImagesModal = ({
     setShowModal(false);
   };
 
+  useEffect(() => {
+    console.log(images);
+  }, [images]);
+
   return (
     <Modal
       open={showModal}
       title="أضف الصور"
       onCancel={handleCancel}
+      width={600}
       onOk={onOk}
     >
-      <Upload
-        listType="picture-card"
-        className="avatar-uploader"
-        action={`${URL}upload`}
-        beforeUpload={beforeUpload}
-        onChange={handleUpload}
-        onRemove={handleRemove}
-      >
-        <div>
-          <InboxOutlined />
-          <div style={{ marginTop: 8 }}>Upload</div>
-        </div>
-      </Upload>
-
       <div
         className="images"
         style={{
@@ -116,19 +107,40 @@ export const ImagesModal = ({
         }}
       >
         {images.map((img) => (
-          <img
-            src={`${IMAGE_URL}${img}`}
-            alt={img}
-            key={img}
-            style={{
-              width: "100px",
-              height: "100px",
-              objectFit: "cover",
-              borderRadius: "8px",
-              border: "1px solid #eee",
-            }}
-          />
+          <div className="relative">
+            <img
+              src={`${IMAGE_URL}${img}`}
+              alt={img}
+              key={img}
+              style={{
+                width: "100px",
+                height: "100px",
+                objectFit: "cover",
+                borderRadius: "8px",
+                border: "1px solid #eee",
+              }}
+            />
+
+            <RiCloseLine
+              className="absolute top-0 right-0 text-lg bg-white rounded-lg border cursor-pointer"
+              onClick={() => handleRemove(img)}
+            />
+          </div>
         ))}
+        <Upload.Dragger
+          listType="text"
+          action={`${URL}upload`}
+          beforeUpload={beforeUpload}
+          onChange={handleUpload}
+          onRemove={handleRemove}
+          className="w-[100px] h-[100px]"
+          showUploadList={false}
+        >
+          <div>
+            <InboxOutlined />
+            <div style={{ marginTop: 8 }}>Upload</div>
+          </div>
+        </Upload.Dragger>
       </div>
     </Modal>
   );

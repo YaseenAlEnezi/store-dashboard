@@ -10,13 +10,14 @@ import {
   Avatar,
 } from "antd";
 import { showNotification } from "../../utils/Notification";
-import { fetcher } from "../../utils/api";
+import { fetcher, IMAGE_URL } from "../../utils/api";
 import { ModalForm } from "./modal/modal";
 import { FaRegEdit } from "react-icons/fa";
 import { MdDeleteOutline } from "react-icons/md";
 import { IoSearchOutline } from "react-icons/io5";
 import { IoIosArrowBack, IoIosArrowForward } from "react-icons/io";
 import { ImagesModal } from "./modal/imageModal";
+import { AiOutlinePlus } from "react-icons/ai";
 
 export const ProductPage = () => {
   const [product, setProduct] = useState([]);
@@ -140,13 +141,13 @@ export const ProductPage = () => {
       dataIndex: "images",
       key: "images",
       render: (text, record) => (
-        <div className="grid grid-cols-8 gap-2">
+        <div className="grid grid-cols-9 w-full max-w-[250px]">
           {Array.isArray(record?.images) &&
             record?.images.map((image, index) => (
               <Avatar
-                src={image}
+                src={IMAGE_URL + image}
                 size="small"
-                className="w-4 h-4 object-cover rounded"
+                className="w-6 h-6 object-cover my-1 border border-gray-200 cursor-pointer rounded"
               />
             ))}
           <Avatar
@@ -154,9 +155,9 @@ export const ProductPage = () => {
             onClick={() => {
               setShowModalImages(true), setRecord(record);
             }}
-            className="w-4 h-4 object-cover rounded cursor-pointer"
+            className="w-6 h-6 object-cover rounded cursor-pointer"
           >
-            +
+            <AiOutlinePlus className="text-lg" />
           </Avatar>
         </div>
       ),

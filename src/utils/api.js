@@ -1,4 +1,4 @@
-export const URL = "http://localhost:3100/api/v1/admin/";
+export const URL = "http://localhost:5000/api/v1/admin/";
 // export const URL = "https://car5x.com/api/v1/admin/";
 // export const URL = "https://car5x.com/api/v1/admin/";
 
@@ -19,7 +19,7 @@ export const fetcher = async ({ pathname, method, data, auth }) => {
   return res.json();
 };
 export const imageUpload = async (pathname, options) => {
-  const res = await fetch(`http://localhost:3100${pathname}`, options);
+  const res = await fetch(`http://localhost:5000${pathname}`, options);
   if (!res.ok) {
     throw new Error("Network response was not ok");
   }

@@ -1,6 +1,16 @@
 import React, { useMemo, useState, useEffect } from "react";
 import { Container } from "../../components/Container";
-import { Button, Col, Form, Input, InputNumber, Row, Select, Table, message } from "antd";
+import {
+  Button,
+  Col,
+  Form,
+  Input,
+  InputNumber,
+  Row,
+  Select,
+  Table,
+  message,
+} from "antd";
 import { IoSearchOutline } from "react-icons/io5";
 import { DeleteOutlined } from "@ant-design/icons";
 import { useQuery } from "@tanstack/react-query";
@@ -21,7 +31,6 @@ export const OnSite = () => {
   ]);
   const [form] = Form.useForm();
 
-  // Product data fetching
   const {
     data: productsResponse,
     isLoading,
@@ -47,23 +56,20 @@ export const OnSite = () => {
 
   const products = productsResponse?.data || [];
 
-  // Generate product options for Select component
   const productOptions = useMemo(() => {
     return products.map((p) => ({
-      value: p.id || p._id, // Use a unique ID instead of name for value
+      value: p.id || p._id,
       label: p.name,
-      data: p, // Store the full product data in the option
+      data: p,
     }));
   }, [products]);
 
-  // Handle input changes for any field
   const handleInputChange = (value, key, field) => {
     setData((prevData) =>
       prevData.map((item) => {
         if (item.key === key) {
           const newItem = { ...item, [field]: value };
 
-          // Recalculate total when quantity or price changes
           if (field === "quantity" || field === "price") {
             newItem.total =
               (Number(newItem.quantity) || 0) * (Number(newItem.price) || 0);
@@ -76,9 +82,9 @@ export const OnSite = () => {
     );
   };
 
-  // Add new empty row
   const addEmptyRow = () => {
     const newRow = {
+      id: null,
       key: Date.now(),
       barcode: "",
       name: "",
@@ -90,7 +96,6 @@ export const OnSite = () => {
     setData((prev) => [...prev, newRow]);
   };
 
-  // Delete row
   const deleteRow = (key) => {
     if (data.length === 1) {
       message.info("يجب أن يكون هناك صف واحد على الأقل");
@@ -99,16 +104,15 @@ export const OnSite = () => {
     setData((prev) => prev.filter((item) => item.key !== key));
   };
 
-  // Handle product selection - FIXED VERSION
   const handleProductSelect = (value, option, recordKey) => {
     const productData = option.data;
 
-    // Update the entire row at once to prevent React state update issues
     setData((prevData) =>
       prevData.map((item) => {
         if (item.key === recordKey) {
           return {
             ...item,
+            id: productData.id,
             name: productData.name,
             barcode: productData.barcode || "",
             price: productData.SellingPrice || 0,
@@ -121,7 +125,6 @@ export const OnSite = () => {
     );
   };
 
-  // Calculate grand total
   const grandTotal = useMemo(() => {
     return data.reduce(
       (sum, item) => sum + Number(item.quantity || 0) * Number(item.price || 0),
@@ -129,7 +132,56 @@ export const OnSite = () => {
     );
   }, [data]);
 
-  // Table columns configuration
+  const submit = async () => {
+    if (data?.[0]?.id === undefined || data?.[0]?.id === null) {
+      message.info("يجب أن يكون هناك صف واحد على الأقل");
+      return;
+    }
+    const payload = {
+      user: {
+        name: form.getFieldValue("customerName"),
+        phone: parseInt(form.getFieldValue("customerPhone")),
+      },
+      items: data.map((item) => ({
+        id: item.id,
+        quantity: parseInt(item.quantity),
+        price: parseInt(item.price),
+      })),
+      orderType: "onSite",
+    };
+
+    console.log(payload);
+
+    try {
+      const res = await fetcher({
+        pathname: "create-order",
+        method: "POST",
+        data: payload,
+        auth: true,
+      });
+      if (res.success) {
+        message.success("تم اضافة المنتجات بنجاح");
+        form.resetFields();
+        setData([
+          {
+            key: Date.now(),
+            barcode: "",
+            name: "",
+            quantity: 1,
+            price: "",
+            total: 0,
+            location: "",
+          },
+        ]);
+        refetch();
+      } else {
+        message.error("فشل في اضافة المنتجات");
+      }
+    } catch (error) {
+      message.error("فشل في اضافة المنتجات");
+    }
+  };
+
   const columns = [
     {
       title: "ت",
@@ -147,17 +199,23 @@ export const OnSite = () => {
         <Select
           showSearch
           value={record.name || undefined}
-          options={productOptions}
+          options={productOptions.filter(
+            (option) =>
+              !data.some(
+                (item) => item.name === option.label && item.key !== record.key
+              )
+          )}
           onChange={(value, option) =>
             handleProductSelect(value, option, record.key)
           }
           onSearch={(value) => setSearch(value)}
           loading={isLoading}
-          filterOption={false}
+          filterOption={(inputValue, option) =>
+            option.label.includes(inputValue)
+          }
           notFoundContent={isLoading ? "جاري البحث..." : "لا توجد منتجات"}
           placeholder="اختر المنتج"
           className="w-full text-right"
-          style={{ width: "100%" }}
         />
       ),
     },
@@ -224,6 +282,13 @@ export const OnSite = () => {
           placeholder="الموقع"
         />
       ),
+      onCell: (record) => ({
+        onKeyDown: (e) => {
+          if (e.key === "Enter" && record?.location != "") {
+            addEmptyRow();
+          }
+        },
+      }),
     },
     {
       title: "المجموع",
@@ -254,15 +319,10 @@ export const OnSite = () => {
     },
   ];
 
-  // Debug current state
-  useEffect(() => {
-    console.log("Current data:", data);
-  }, [data]);
-
   return (
     <Container>
       <div className="mb-4 flex flex-wrap justify-between items-center">
-        <h1 className="text-3xl font-bold">قائمة المنتجات</h1>
+        <h1 className="text-3xl font-bold">فاتورة البيع</h1>
         <div className="flex justify-end items-center gap-4 mt-2 sm:mt-0">
           <Button
             type="primary"
@@ -274,16 +334,38 @@ export const OnSite = () => {
         </div>
       </div>
 
-      <Form form={form} layout="vertical">
+      <Form form={form} onFinish={submit} layout="vertical">
         <Row gutter={[16, 16]}>
           <Col xs={24} sm={12} md={6}>
-            <Form.Item label="الزبون" name="customerName">
-              <Input placeholder="الزبون" />
+            <Form.Item
+              label="اسم الزبون"
+              name="customerName"
+              rules={[{ required: true, message: "أسم الزبون مطلوب" }]}
+            >
+              <Input placeholder="اسم الزبون" />
             </Form.Item>
           </Col>
           <Col xs={24} sm={12} md={6}>
-            <Form.Item label="رقم هاتف الزبون" name="customerPhone">
-              <Input placeholder="رقم هاتف الزبون" />
+            <Form.Item
+              label="رقم هاتف الزبون"
+              name="customerPhone"
+              rules={[
+                { required: true, message: "رقم هاتف الزبون مطلوب" },
+                { min: 11, message: "رقم هاتف الزبون يجب أن يكون 11 رقم" },
+                { max: 11, message: "رقم هاتف الزبون يجب أن يكون 11 رقم" },
+                {
+                  validator(_, value) {
+                    if (value.startsWith("07")) {
+                      return Promise.resolve();
+                    }
+                    return Promise.reject(
+                      new Error("رقم هاتف الزبون يجب ان يبدا ب 07")
+                    );
+                  },
+                },
+              ]}
+            >
+              <Input showCount placeholder="رقم هاتف الزبون" maxLength={11} />
             </Form.Item>
           </Col>
         </Row>
@@ -296,6 +378,25 @@ export const OnSite = () => {
             scroll={{ x: "max-content" }}
             rowKey="key"
             bordered
+            render={() => (
+              <>
+                <Table.Row>
+                  <Table.Cell colSpan={6} className="text-right">
+                    <strong>المجموع الكلي:</strong>
+                  </Table.Cell>
+                  <Table.Cell colSpan={2}>
+                    <span className="text-lg font-bold">
+                      {grandTotal.toFixed(2)} د.ع
+                    </span>
+                  </Table.Cell>
+                </Table.Row>
+                <Table.Row>
+                  <Table.Cell colSpan={8} className="text-right">
+                    <strong>إضافة صف جديد:</strong>
+                  </Table.Cell>
+                </Table.Row>
+              </>
+            )}
             summary={() => (
               <Table.Summary fixed="bottom">
                 <Table.Summary.Row>
@@ -319,13 +420,7 @@ export const OnSite = () => {
 
         <div className="flex justify-end gap-4 mt-4">
           <Button type="default">إلغاء</Button>
-          <Button
-            type="primary"
-            onClick={() => {
-              console.log("Submitted data:", data);
-              message.success("تم حفظ القائمة بنجاح");
-            }}
-          >
+          <Button type="primary" htmlType="submit">
             حفظ القائمة
           </Button>
         </div>

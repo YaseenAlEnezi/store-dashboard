@@ -11,11 +11,13 @@ import {
 } from "antd";
 import { showNotification } from "../../utils/Notification";
 import { fetcher, IMAGE_URL } from "../../utils/api";
-import { FaRegEdit } from "react-icons/fa";
+import { FaCarSide, FaRegEdit } from "react-icons/fa";
 import { MdDeleteOutline } from "react-icons/md";
 import { IoSearchOutline } from "react-icons/io5";
 import { IoIosArrowBack, IoIosArrowForward } from "react-icons/io";
-
+import { MdFindInPage } from "react-icons/md";
+import { Navigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 export const OrderPage = () => {
   const [order, setOrder] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -25,6 +27,7 @@ export const OrderPage = () => {
   const [record, setRecord] = useState(null);
   const [search, setSearch] = useState("");
   const [showModal, setShowModal] = useState(false);
+  const Navigate = useNavigate();
 
   const itemRender = (_, type, originalElement) => {
     if (type === "prev") {
@@ -136,20 +139,11 @@ export const OrderPage = () => {
       key: "edit",
       render: (text, record) => (
         <div className="flex items-center gap-2">
-          <Popconfirm
-            title="هل أنت متأكد؟"
-            description="هل أنت متأكد من حذف الحساب؟"
-            onConfirm={() => deleteOrder(record.id)}
-            okText="حذف"
-            cancelText="ألغاء"
-          >
-            <MdDeleteOutline className="text-red-500 text-xl cursor-pointer" />
-          </Popconfirm>
-          <FaRegEdit
+          <MdFindInPage
             onClick={() => {
-              setShowModal(true), setRecord(record);
+              Navigate(`/orderTracking/${record.id}`);
             }}
-            className="text-blue-500 text-xl cursor-pointer"
+            className="text-xl cursor-pointer"
           />
         </div>
       ),

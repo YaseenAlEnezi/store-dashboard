@@ -220,7 +220,6 @@ export const OnSite = () => {
               barcode?.toLowerCase().includes(inputValue.toLowerCase())
             );
           }}
-          
           notFoundContent={isLoading ? "جاري البحث..." : "لا توجد منتجات"}
           placeholder="اختر المنتج"
           className="w-full text-right"
@@ -240,15 +239,17 @@ export const OnSite = () => {
       key: "quantity",
       width: 100,
       render: (text, record) => (
-        <Input
-          type="number"
-          min={1}
-          value={record.quantity}
-          onChange={(e) =>
-            handleInputChange(e.target.value, record.key, "quantity")
-          }
-          placeholder="الكمية"
-        />
+        <>
+          <Input
+            type="number"
+            min={1}
+            value={record.quantity}
+            onChange={(e) =>
+              handleInputChange(e.target.value, record.key, "quantity")
+            }
+            placeholder="الكمية"
+          />
+        </>
       ),
     },
     {

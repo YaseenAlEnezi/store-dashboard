@@ -29,7 +29,7 @@ export default function Navbar() {
     },
     {
       name: "الطلبات",
-      href: "/orders",
+      href: "/order",
       current: true,
     },
     {

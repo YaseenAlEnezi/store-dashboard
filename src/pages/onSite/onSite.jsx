@@ -137,16 +137,19 @@ export const OnSite = () => {
       message.info("يجب أن يكون هناك صف واحد على الأقل");
       return;
     }
+    const name = form.getFieldValue("customerName");
+    const phone = form.getFieldValue("customerPhone");
     const payload = {
       user: {
-        name: form.getFieldValue("customerName"),
-        phone: parseInt(form.getFieldValue("customerPhone")),
+        name: phone ? form.getFieldValue("customerName") : null,
+        phone: phone ? form.getFieldValue("customerPhone") : null,
       },
       items: data.map((item) => ({
         id: item.id,
         quantity: parseInt(item.quantity),
         price: parseInt(item.price),
       })),
+      address: form.getFieldValue("address"),
       orderType: "onSite",
     };
 
@@ -202,7 +205,7 @@ export const OnSite = () => {
           options={productOptions.filter(
             (option) =>
               !data.some(
-                (item) => item.name === option.label && item.key !== record.key
+                (item) => item.id === option.value && item.key !== record.key
               )
           )}
           onChange={(value, option) =>
@@ -210,9 +213,14 @@ export const OnSite = () => {
           }
           onSearch={(value) => setSearch(value)}
           loading={isLoading}
-          filterOption={(inputValue, option) =>
-            option.label.includes(inputValue)
-          }
+          filterOption={(inputValue, option) => {
+            const { name, barcode } = option.data;
+            return (
+              name?.toLowerCase().includes(inputValue.toLowerCase()) ||
+              barcode?.toLowerCase().includes(inputValue.toLowerCase())
+            );
+          }}
+          
           notFoundContent={isLoading ? "جاري البحث..." : "لا توجد منتجات"}
           placeholder="اختر المنتج"
           className="w-full text-right"
@@ -220,19 +228,11 @@ export const OnSite = () => {
       ),
     },
     {
-      title: "الباركود",
-      dataIndex: "barcode",
-      key: "barcode",
+      title: "المواقع",
+      dataIndex: "location",
+      key: "location",
       width: 150,
-      render: (text, record) => (
-        <Input
-          value={record.barcode}
-          onChange={(e) =>
-            handleInputChange(e.target.value, record.key, "barcode")
-          }
-          placeholder="الباركود"
-        />
-      ),
+      render: (text, record) => <p placeholder="الموقع">{record.location}</p>,
     },
     {
       title: "الكمية",
@@ -252,6 +252,13 @@ export const OnSite = () => {
       ),
     },
     {
+      title: "الباركود",
+      dataIndex: "barcode",
+      key: "barcode",
+      width: 150,
+      render: (text, record) => <p placeholder="الباركود">{record.barcode}</p>,
+    },
+    {
       title: "السعر",
       dataIndex: "price",
       key: "price",
@@ -267,28 +274,6 @@ export const OnSite = () => {
           placeholder="السعر"
         />
       ),
-    },
-    {
-      title: "المواقع",
-      dataIndex: "location",
-      key: "location",
-      width: 150,
-      render: (text, record) => (
-        <Input
-          value={record.location}
-          onChange={(e) =>
-            handleInputChange(e.target.value, record.key, "location")
-          }
-          placeholder="الموقع"
-        />
-      ),
-      onCell: (record) => ({
-        onKeyDown: (e) => {
-          if (e.key === "Enter" && record?.location != "") {
-            addEmptyRow();
-          }
-        },
-      }),
     },
     {
       title: "المجموع",
@@ -346,26 +331,13 @@ export const OnSite = () => {
             </Form.Item>
           </Col>
           <Col xs={24} sm={12} md={6}>
-            <Form.Item
-              label="رقم هاتف الزبون"
-              name="customerPhone"
-              rules={[
-                { required: true, message: "رقم هاتف الزبون مطلوب" },
-                { min: 11, message: "رقم هاتف الزبون يجب أن يكون 11 رقم" },
-                { max: 11, message: "رقم هاتف الزبون يجب أن يكون 11 رقم" },
-                {
-                  validator(_, value) {
-                    if (value.startsWith("07")) {
-                      return Promise.resolve();
-                    }
-                    return Promise.reject(
-                      new Error("رقم هاتف الزبون يجب ان يبدا ب 07")
-                    );
-                  },
-                },
-              ]}
-            >
+            <Form.Item label="رقم هاتف الزبون" name="customerPhone">
               <Input showCount placeholder="رقم هاتف الزبون" maxLength={11} />
+            </Form.Item>
+          </Col>
+          <Col xs={24} sm={12} md={6}>
+            <Form.Item label="عنوان الزبون" name="address">
+              <Input placeholder="عنوان الزبون" />
             </Form.Item>
           </Col>
         </Row>

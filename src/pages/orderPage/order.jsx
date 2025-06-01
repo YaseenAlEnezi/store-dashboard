@@ -115,6 +115,31 @@ export const OrderPage = () => {
       ),
     },
     {
+      title: "الحالة",
+      dataIndex: "status",
+      key: "status",
+      render: (text, record) => (
+        <Tag
+          className="text-[14px] font-semibold"
+          color={
+            record.status === "created"
+              ? "orange"
+              : record.status === "accepted"
+              ? "green"
+              : record.status === "shipping"
+              ? "blue"
+              : record.status === "delivered"
+              ? "purple"
+              : record.status === "cancelled"
+              ? "volcano"
+              : "red"
+          }
+        >
+          {record.status}
+        </Tag>
+      ),
+    },
+    {
       title: "نوع الطلب",
       dataIndex: "orderType",
       key: "orderType",
@@ -126,12 +151,6 @@ export const OrderPage = () => {
           {record.orderType}
         </Tag>
       ),
-    },
-    {
-      title: "حالة الطلب",
-      dataIndex: "status",
-      key: "status",
-      render: (text, record) => <Tag>{record.status}</Tag>,
     },
     {
       title: "تعديل",

@@ -89,7 +89,7 @@ export const OnSite = () => {
       barcode: "",
       name: "",
       quantity: 1,
-      price: "",
+      price: 0,
       total: 0,
       location: "",
     };
@@ -117,7 +117,7 @@ export const OnSite = () => {
             barcode: productData.barcode || "",
             price: productData.SellingPrice || 0,
             location: productData.location || "",
-            total: (item.quantity || 1) * (productData.price || 0),
+            total: (item.quantity || 1) * productData.price,
           };
         }
         return item;
@@ -146,8 +146,11 @@ export const OnSite = () => {
       },
       items: data.map((item) => ({
         id: item.id,
+        barcode: item.barcode,
+        name: item.name,
         quantity: parseInt(item.quantity),
         price: parseInt(item.price),
+        location: item.location,
       })),
       address: form.getFieldValue("address"),
       orderType: "onSite",

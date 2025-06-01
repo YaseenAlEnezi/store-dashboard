@@ -13,9 +13,14 @@ import {
   Save,
   X,
   CreditCard,
+  PackageMinusIcon,
 } from "lucide-react";
 import { Card, Table } from "antd";
-import StatusDropdown from "../../components/StatusDropdown";
+import StatusDropdown from "./StatusDropdown";
+import { useParams } from "react-router-dom";
+import { fetcher } from "../../utils/api";
+import { showNotification } from "../../utils/Notification";
+import { EditModal } from "./EditModal";
 
 export const OrderTracking = () => {
   // Initialize state
@@ -23,42 +28,35 @@ export const OrderTracking = () => {
   const [loading, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [editedStatus, setEditedStatus] = useState("");
+  const [open, setOpen] = useState(false);
+  const [record, setRecord] = useState(null);
+  const { id } = useParams();
 
-  // Mock data - would normally come from an API
-  const mockData = {
-    id: 13,
-    items: [
-      {
-        id: 26,
-        name: "كيلون باب امامي ايسر نيسان صني هندي ",
-        quantity: -1,
-        price: 32000,
-        thumbnail: null,
-        shortDescription: "",
-      },
-    ],
-    address: "بغداد الدورة",
-    status: "created",
-    createdAt: "2025-05-01T09:48:43.878Z",
-    userId: 5,
-    orderType: "onSite",
-    user: {
-      id: 5,
-      name: "ام يوسف ",
-      phone: "07728442864",
-    },
+  const getOrderById = async () => {
+    setLoading(true);
+    try {
+      const response = await fetcher({
+        pathname: `order/${id}`,
+        method: "GET",
+        data: null,
+        auth: true,
+      });
+      if (response.success) {
+        setOrder(response.data);
+        setEditedStatus(response.data.status);
+      }
+      setLoading(false);
+    } catch (error) {
+      setLoading(false);
+      showNotification("error", "Failed to fetch order", "");
+      console.log(error);
+    }
   };
 
-  // Simulate fetching data
   useEffect(() => {
-    setTimeout(() => {
-      setOrder(mockData);
-      setEditedStatus(mockData.status);
-      setLoading(false);
-    }, 1000);
+    getOrderById();
   }, []);
 
-  // Helpers and formatters
   const formatDate = (dateString) => {
     if (!dateString) return "";
     const date = new Date(dateString);
@@ -85,17 +83,17 @@ export const OrderTracking = () => {
   const getCurrentStep = (status) => {
     switch (status) {
       case "created":
-        return 0;
-      case "processing":
-        return 1;
-      case "shipped":
-        return 2;
+        return { step: 0, color: "bg-blue-600" };
+      case "accepted":
+        return { step: 1, color: "bg-yellow-500" };
+      case "shipping":
+        return { step: 2, color: "bg-purple-500" };
       case "delivered":
-        return 3;
-      case "canceled":
-        return -1;
+        return { step: 3, color: "bg-green-500" };
+      case "cancelled":
+        return { step: -1, color: "bg-red-500" };
       default:
-        return 0;
+        return { step: 0, color: "bg-gray-400" };
     }
   };
 
@@ -125,6 +123,11 @@ export const OrderTracking = () => {
       key: "name",
     },
     {
+      title: "الموقع",
+      dataIndex: "location",
+      key: "location",
+    },
+    {
       title: "الكمية",
       dataIndex: "quantity",
       key: "quantity",
@@ -146,12 +149,57 @@ export const OrderTracking = () => {
         </span>
       ),
     },
+    {
+      title: "الإجراءات",
+      key: "actions",
+      render: (text, record) => (
+        <div className="flex items-center gap-2">
+          <button
+            className="text-blue-500 hover:text-blue-700"
+            onClick={() => {
+              setRecord(record);
+              setOpen(true);
+            }}
+          >
+            <Edit3 size={20} />
+          </button>
+          <button
+            className="text-red-500 hover:text-red-700"
+            onClick={() => console.log("Delete", record)}
+          >
+            <PackageMinusIcon size={20} />
+          </button>
+        </div>
+      ),
+    },
   ];
 
   const handleStatusChange = (newStatus) => {
     setEditedStatus(newStatus);
     setOrder({ ...order, status: newStatus });
-    alert("تم تحديث حالة الطلب بنجاح");
+  };
+
+  const stepStyles = {
+    created: {
+      bg: "bg-blue-600",
+      text: "text-blue-600",
+      ring: "ring-blue-100",
+    },
+    accepted: {
+      bg: "bg-yellow-300",
+      text: "text-yellow-600",
+      ring: "ring-yellow-100",
+    },
+    shipping: {
+      bg: "bg-purple-500",
+      text: "text-purple-600",
+      ring: "ring-purple-100",
+    },
+    delivered: {
+      bg: "bg-green-500",
+      text: "text-green-600",
+      ring: "ring-green-100",
+    },
   };
 
   if (loading) {
@@ -229,14 +277,23 @@ export const OrderTracking = () => {
                   </p>
                 </div>
 
-                {order.status !== "canceled" ? (
+                {order.status !== "cancelled" ? (
                   <div className="w-full">
                     {/* Custom Step Indicator */}
                     <div className="relative flex items-center justify-between">
                       {steps.map((step, index) => {
-                        const currentStep = getCurrentStep(order.status);
+                        const currentStep = getCurrentStep(order.status).step;
                         const isCompleted = index <= currentStep;
                         const isCurrent = index === currentStep;
+
+                        // Get colors based on this step
+                        const statusKeys = Object.keys(stepStyles);
+                        const stepKey = statusKeys[index]; // Assumes steps follow same order
+                        const colors = stepStyles[stepKey] || {
+                          bg: "bg-gray-200",
+                          text: "text-gray-500",
+                          ring: "ring-gray-100",
+                        };
 
                         return (
                           <div
@@ -244,20 +301,24 @@ export const OrderTracking = () => {
                             className="flex flex-col items-center z-10"
                           >
                             <div
-                              className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                                isCompleted
-                                  ? "bg-blue-600 text-white"
-                                  : "bg-gray-200"
-                              } ${isCurrent ? "ring-4 ring-blue-100" : ""}`}
+                              className={`w-10 h-10 rounded-full flex items-center justify-center
+                                          ${
+                                            isCompleted
+                                              ? colors.bg + " text-white"
+                                              : "bg-gray-200"
+                                          }
+                                          ${
+                                            isCurrent
+                                              ? colors.ring + " ring-4"
+                                              : ""
+                                          }`}
                             >
                               {step.icon}
                             </div>
                             <div className="text-center mt-2">
                               <p
                                 className={`font-medium ${
-                                  isCompleted
-                                    ? "text-blue-600"
-                                    : "text-gray-500"
+                                  isCompleted ? colors.text : "text-gray-500"
                                 }`}
                               >
                                 {step.title}
@@ -268,18 +329,22 @@ export const OrderTracking = () => {
                       })}
 
                       {/* Progress bar connecting steps */}
-                      <div className="absolute top-5 left-0 h-1 bg-gray-200 w-full -z-10"></div>
                       <div
-                        className="absolute top-5 left-0 h-1 bg-blue-600 -z-10"
+                        className={`absolute top-5 left-0 h-1 bg-gray-200 w-full -z-10`}
+                      ></div>
+                      <div
+                        className={`absolute top-5 left-0 h-1 ${
+                          getCurrentStep(order.status).color
+                        } -z-10`}
                         style={{
-                          width: `${getCurrentStep(order.status) * 33.33}%`,
+                          width: `${getCurrentStep(order.status).step}%`,
                         }}
                       ></div>
                     </div>
                   </div>
                 ) : (
-                  <div className="bg-red-50 p-4 rounded-md border border-red-200 text-center flex items-center justify-center">
-                    <XCircle size={20} className="mr-2 text-red-600" />
+                  <div className="bg-red-50 p-4 rounded-md border border-red-200 gap-1 text-center flex items-center justify-center">
+                    <XCircle size={20} className="text-red-600" />
                     <p className="text-red-600 font-semibold">
                       تم إلغاء هذا الطلب
                     </p>
@@ -317,6 +382,7 @@ export const OrderTracking = () => {
           </>
         )}
       </div>
+      <EditModal open={open} setOpen={setOpen} record={record} />
     </div>
   );
 };

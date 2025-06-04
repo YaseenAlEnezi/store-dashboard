@@ -2,8 +2,8 @@ import React, { useEffect, useState } from "react";
 import { Container } from "../../components/Container";
 import { Button, Table, Input, Popconfirm, Typography, Pagination } from "antd";
 import { showNotification } from "../../utils/Notification";
-import { fetcher } from "../../utils/api";
-import { ModalForm } from "./modal/modal";
+import { fetcher, IMAGE_URL } from "../../utils/api";
+import { AddModal } from "./modal/modal";
 import { FaRegEdit } from "react-icons/fa";
 import { MdDeleteOutline } from "react-icons/md";
 import { IoSearchOutline } from "react-icons/io5";
@@ -17,6 +17,11 @@ export const BannerPage = () => {
   const [record, setRecord] = useState(null);
   const [search, setSearch] = useState("");
   const [showModal, setShowModal] = useState(false);
+  const [showTwoSidesModal, setShowTwoSidesModal] = useState(false);
+  const [showSliderModal, setShowSliderModal] = useState(false);
+  const [showCategoryModal, setShowCategoryModal] = useState(false);
+  const [showItemsModal, setShowItemsModal] = useState(false);
+  const [showBrandModal, setShowBrandModal] = useState(false);
 
   const itemRender = (_, type, originalElement) => {
     if (type === "prev") {
@@ -44,9 +49,14 @@ export const BannerPage = () => {
         data: null,
         auth: true,
       });
-      if (response.success) {
+      if (response) {
         setBanner(response.data);
         setTotal(response.total);
+        console.log(response.data);
+
+        showNotification("success", "Banner fetched successfully", "");
+      } else {
+        showNotification("error", "ter", "");
       }
     } catch (error) {
       showNotification("error", "Failed to fetch banner", "");
@@ -72,16 +82,43 @@ export const BannerPage = () => {
     getBanner();
   }, [page, pageSize, search]);
 
+  const showEditModal = (record) => {
+    const type = record.bannerType;
+    setRecord(record);
+    switch (type) {
+      case "single":
+        setShowModal(true);
+        break;
+      case "twoSides":
+        setShowTwoSidesModal(true);
+        break;
+      case "slider":
+        setShowSliderModal(true);
+        break;
+      case "category":
+        setShowCategoryModal(true);
+        break;
+      case "items":
+        setShowItemsModal(true);
+        break;
+      case "brand":
+        setShowBrandModal(true);
+        break;
+      default:
+        break;
+    }
+  };
+
   const columns = [
     {
-      title: "الصوره",
-      dataIndex: "image",
-      key: "image",
+      title: "الصورة",
+      dataIndex: "img",
+      key: "img",
       render: (text, record) => (
         <img
-          className="w-12 h-12 object-cover rounded"
-          src={record.image}
-          alt=""
+          src={`${IMAGE_URL}${text}`}
+          alt={record.name}
+          className="w-10 h-10 rounded-md object-cover"
         />
       ),
     },
@@ -94,17 +131,17 @@ export const BannerPage = () => {
       ),
     },
     {
-      title: "الوصف",
-      dataIndex: "description",
-      key: "description",
+      title: "النوع",
+      dataIndex: "bannerType",
+      key: "bannerType",
       render: (text, record) => (
         <Typography.Text strong>{text}</Typography.Text>
       ),
     },
     {
       title: "الترتيب",
-      dataIndex: "order",
-      key: "order",
+      dataIndex: "priority",
+      key: "priority",
       render: (text, record) => (
         <Typography.Text strong>{text}</Typography.Text>
       ),
@@ -126,7 +163,7 @@ export const BannerPage = () => {
           </Popconfirm>
           <FaRegEdit
             onClick={() => {
-              setShowModal(true), setRecord(record);
+              showEditModal(record);
             }}
             className="text-blue-500 text-xl cursor-pointer"
           />
@@ -174,7 +211,7 @@ export const BannerPage = () => {
           itemRender={itemRender}
           className="mt-4"
         />
-        <ModalForm
+        <AddModal
           showModal={showModal}
           setShowModal={setShowModal}
           getBanner={getBanner}

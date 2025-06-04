@@ -215,7 +215,7 @@ export const AddModal = ({
 
         <div className="flex justify-end my-4">
           <Button type="primary" htmlType="submit">
-            {record ? "تعديل الواجهة" : "اضافة الواجهة"}
+            {"تعديل الواجهة"}
           </Button>
         </div>
       </Form>

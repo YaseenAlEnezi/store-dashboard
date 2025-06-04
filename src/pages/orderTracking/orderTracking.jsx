@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import {
   Clock,
   User,
@@ -11,25 +11,22 @@ import {
   ShoppingBag,
   Edit3,
   Save,
-  X,
   CreditCard,
-  PackageMinusIcon,
+  Trash2,
 } from "lucide-react";
-import { Card, Table } from "antd";
+import { Button, Card, Input, Popconfirm, Select, Table } from "antd";
 import StatusDropdown from "./StatusDropdown";
 import { useParams } from "react-router-dom";
 import { fetcher } from "../../utils/api";
 import { showNotification } from "../../utils/Notification";
-import { EditModal } from "./EditModal";
 
 export const OrderTracking = () => {
-  // Initialize state
   const [order, setOrder] = useState(null);
+  const [products, setProducts] = useState([]);
+  const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
-  const [isEditing, setIsEditing] = useState(false);
+  const [editID, setEditID] = useState(null);
   const [editedStatus, setEditedStatus] = useState("");
-  const [open, setOpen] = useState(false);
-  const [record, setRecord] = useState(null);
   const { id } = useParams();
 
   const getOrderById = async () => {
@@ -53,9 +50,54 @@ export const OrderTracking = () => {
     }
   };
 
+  const updateOrder = async () => {
+    try {
+      const response = await fetcher({
+        pathname: `order/${id}`,
+        method: "PUT",
+        data: order,
+        auth: true,
+      });
+      getOrderById();
+      if (response.success) {
+        showNotification("success", "Order updated successfully", "");
+      } else {
+        showNotification("error", "Failed to update order", "");
+      }
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  const getProducts = async () => {
+    try {
+      const response = await fetcher({
+        pathname: `product?search=${search}&page=1&pageSize=10`,
+        method: "GET",
+        data: null,
+        auth: true,
+      });
+      if (response.success) {
+        setProducts(response.data);
+        return response.data;
+      }
+    } catch (error) {
+      console.error("Error fetching products:", error);
+      showNotification("error", "Failed to fetch products", "");
+    }
+    return [];
+  };
+
   useEffect(() => {
     getOrderById();
   }, []);
+  useEffect(() => {
+    getProducts();
+  }, [search]);
+
+  useEffect(() => {
+    console.log("Order:", order);
+  }, [order]);
 
   const formatDate = (dateString) => {
     if (!dateString) return "";
@@ -131,13 +173,50 @@ export const OrderTracking = () => {
       title: "الكمية",
       dataIndex: "quantity",
       key: "quantity",
-      render: (text) => <span>{Math.abs(text)}</span>,
+      render: (text, record) =>
+        editID === record.id ? (
+          <Input
+            className="w-24"
+            value={record.quantity}
+            type="number"
+            onChange={(e) =>
+              setOrder((prev) => ({
+                ...prev,
+                items: prev.items.map((item) =>
+                  item.id === record.id
+                    ? { ...item, quantity: parseFloat(e.target.value) }
+                    : item
+                ),
+              }))
+            }
+          />
+        ) : (
+          <span>{Math.abs(text)}</span>
+        ),
     },
     {
       title: "السعر",
       dataIndex: "price",
       key: "price",
-      render: (text) => <span>{text.toLocaleString()} د.ع</span>,
+      render: (text, record) =>
+        editID === record.id ? (
+          <Input
+            className="w-24"
+            value={record?.price}
+            onChange={(e) =>
+              setOrder((prev) => ({
+                ...prev,
+                items: prev.items.map((item) =>
+                  item.id === record.id
+                    ? { ...item, price: parseFloat(e.target.value) }
+                    : item
+                ),
+              }))
+            }
+          />
+        ) : (
+          <span>{record?.price?.toLocaleString()} د.ع</span>
+        ),
     },
     {
       title: "المجموع",
@@ -154,21 +233,26 @@ export const OrderTracking = () => {
       key: "actions",
       render: (text, record) => (
         <div className="flex items-center gap-2">
-          <button
-            className="text-blue-500 hover:text-blue-700"
-            onClick={() => {
-              setRecord(record);
-              setOpen(true);
+          <button className="text-blue-500 hover:text-blue-700">
+            {editID === record.id ? (
+              <Save size={20} onClick={() => setEditID(null)} />
+            ) : (
+              <Edit3 size={20} onClick={() => setEditID(record?.id)} />
+            )}
+          </button>
+          <Popconfirm
+            title="هل أنت متأكد من حذف هذا المنتج؟"
+            onConfirm={() => {
+              setOrder((prev) => ({
+                ...prev,
+                items: prev.items.filter((item) => item.id !== record.id),
+              }));
             }}
           >
-            <Edit3 size={20} />
-          </button>
-          <button
-            className="text-red-500 hover:text-red-700"
-            onClick={() => console.log("Delete", record)}
-          >
-            <PackageMinusIcon size={20} />
-          </button>
+            <button className="text-red-500 hover:text-red-700">
+              <Trash2 size={20} />
+            </button>
+          </Popconfirm>
         </div>
       ),
     },
@@ -221,8 +305,13 @@ export const OrderTracking = () => {
         {/* Header */}
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-bold">متابعة الطلب</h1>
-          <div className="bg-blue-100 text-blue-800 px-3 py-1 rounded-lg">
-            رقم الطلب: {order?.id}
+          <div className="flex items-center gap-4">
+            <Button type="primary" onClick={updateOrder}>
+              حفظ التغييرات
+            </Button>
+            <Button className="pointer-events-none">
+              رقم الطلب: {order?.id}
+            </Button>
           </div>
         </div>
 
@@ -355,13 +444,51 @@ export const OrderTracking = () => {
             {/* Order Items */}
             <Card className="bg-white rounded-lg shadow-sm p-6">
               <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-semibold flex items-center">
-                  <Package size={20} className="ml-2" />
-                  المنتجات
-                </h2>
-                <div className="bg-blue-50 text-blue-700 px-3 py-1 rounded-md text-sm font-medium">
-                  {order.items.length} منتج
+                <div className="flex items-center gap-2">
+                  <h2 className="text-xl font-semibold flex items-center">
+                    <Package size={20} className="ml-2" />
+                    المنتجات
+                  </h2>
+                  <div className="bg-blue-50 text-blue-700 px-3 py-1 rounded-md text-sm font-medium">
+                    {order.items.length} منتج
+                  </div>
                 </div>
+                <Select
+                  placeholder="بحث عن منتج"
+                  options={products
+                    .filter(
+                      (product) =>
+                        !order.items.some((item) => item.id === product.id)
+                    )
+                    .map((product) => ({
+                      label: product.name,
+                      value: product.id,
+                    }))}
+                  className="w-[200px]"
+                  filterOption={(input, option) =>
+                    option.label.toLowerCase().includes(input.toLowerCase())
+                  }
+                  onChange={(value) => {
+                    const selectedProduct = products.find(
+                      (product) => product.id === value
+                    );
+                    if (selectedProduct) {
+                      setOrder((prev) => ({
+                        ...prev,
+                        items: [
+                          ...prev.items,
+                          {
+                            id: selectedProduct.id,
+                            name: selectedProduct.name,
+                            price: selectedProduct.SellingPrice || 0,
+                            quantity: 1, // Default quantity
+                            location: selectedProduct.location || "غير محدد",
+                          },
+                        ],
+                      }));
+                    }
+                  }}
+                />
               </div>
               <Table
                 dataSource={order.items}
@@ -382,7 +509,6 @@ export const OrderTracking = () => {
           </>
         )}
       </div>
-      <EditModal open={open} setOpen={setOpen} record={record} />
     </div>
   );
 };

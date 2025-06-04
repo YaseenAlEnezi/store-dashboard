@@ -10,13 +10,10 @@ import {
   Tag,
 } from "antd";
 import { showNotification } from "../../utils/Notification";
-import { fetcher, IMAGE_URL } from "../../utils/api";
-import { FaCarSide, FaRegEdit } from "react-icons/fa";
-import { MdDeleteOutline } from "react-icons/md";
+import { fetcher } from "../../utils/api";
 import { IoSearchOutline } from "react-icons/io5";
 import { IoIosArrowBack, IoIosArrowForward } from "react-icons/io";
 import { MdFindInPage } from "react-icons/md";
-import { Navigate } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
 export const OrderPage = () => {
   const [order, setOrder] = useState([]);
@@ -24,9 +21,7 @@ export const OrderPage = () => {
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
-  const [record, setRecord] = useState(null);
   const [search, setSearch] = useState("");
-  const [showModal, setShowModal] = useState(false);
   const Navigate = useNavigate();
 
   const itemRender = (_, type, originalElement) => {
@@ -173,7 +168,7 @@ export const OrderPage = () => {
     <div>
       <Container>
         <div className="mb-4 flex justify-between">
-          <h1 className="text-3xl font-bold">العلامات التجارية</h1>
+          <h1 className="text-3xl font-bold">الطلبات</h1>
           <div className="flex justify-end items-end w-1/4 gap-4">
             <Input
               placeholder="بحث عن مستخدم"
@@ -182,16 +177,6 @@ export const OrderPage = () => {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
-            <Button
-              type="primary"
-              className="bg-[#FFED03] hover:bg-[#FFED03] text-black"
-              onClick={() => {
-                setShowModal(true);
-                setRecord(null);
-              }}
-            >
-              اضافة
-            </Button>
           </div>
         </div>
         <Table

@@ -13,6 +13,8 @@ import {
 import { useEffect, useState } from "react";
 import { showNotification } from "../../../utils/Notification";
 import { fetcher, IMAGE_URL, URL } from "../../../utils/api";
+import { useWatch } from "antd/es/form/Form";
+import { ImageIcon } from "lucide-react";
 
 export const AddModal = ({
   showModal,
@@ -23,9 +25,11 @@ export const AddModal = ({
 }) => {
   const [form] = Form.useForm();
   const [previewImage, setPreviewImage] = useState(null);
-  const [image, setImage] = useState();
+  const [image, setImage] = useState(null);
+  const watchedBannerType = useWatch("BannerType", form);
 
   useEffect(() => {
+    setImage(null);
     if (record) {
       setPreviewImage(`${IMAGE_URL + record.img}`);
       setImage(record.img);
@@ -174,11 +178,7 @@ export const AddModal = ({
         )}
         <Row gutter={16}>
           <Col span={24}>
-            <Form.Item
-              name="link"
-              label="رابط الواجهة"
-              rules={[{ required: true, message: "ادخل رابط الواجهة" }]}
-            >
+            <Form.Item name="link" label="رابط الواجهة">
               <Input />
             </Form.Item>
           </Col>
@@ -194,17 +194,18 @@ export const AddModal = ({
                 onChange={handleUpload}
                 className="w-[100px] h-[100px]"
                 showUploadList={false}
+                disabled={watchedBannerType !== "single"}
               >
                 <div className="flex items-center justify-center">
                   {previewImage ? (
                     <img
                       src={previewImage}
                       alt="preview"
-                      className=" w-full h-full object-cover"
+                      className="w-full h-full object-cover"
                     />
                   ) : (
-                    <div className="text-gray-500">
-                      اسحب صورة هنا أو انقر للتحميل
+                    <div className="text-gray-500 flex items-center justify-center h-full gap-2">
+                      اسحب صورة هنا أو انقر للتحميل <ImageIcon />
                     </div>
                   )}
                 </div>

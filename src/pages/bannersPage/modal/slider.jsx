@@ -15,7 +15,7 @@ import { showNotification } from "../../../utils/Notification";
 import { fetcher, IMAGE_URL, URL } from "../../../utils/api";
 import { IoIosClose } from "react-icons/io";
 
-export const TwoSides = ({
+export const Slider = ({
   showModal,
   setShowModal,
   getBanner,
@@ -167,16 +167,11 @@ export const TwoSides = ({
                 placeholder="اختر واجهات"
                 value={selectedBannerID}
                 onChange={(value) => {
-                  if (value.length <= 2) {
-                    setSelectedBannerID(value);
-                  }
+                  setSelectedBannerID(value);
                 }}
                 options={bannerIDs.map((banner) => ({
                   label: banner.name,
                   value: banner.id,
-                  disabled:
-                    selectedBannerID?.length >= 2 &&
-                    !selectedBannerID.includes(banner.id),
                 }))}
               />
 

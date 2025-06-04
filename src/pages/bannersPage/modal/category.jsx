@@ -15,7 +15,7 @@ import { showNotification } from "../../../utils/Notification";
 import { fetcher, IMAGE_URL, URL } from "../../../utils/api";
 import { IoIosClose } from "react-icons/io";
 
-export const TwoSides = ({
+export const Category = ({
   showModal,
   setShowModal,
   getBanner,
@@ -23,14 +23,14 @@ export const TwoSides = ({
   setRecord,
 }) => {
   const [form] = Form.useForm();
-  const [bannerIDs, setBannerIDs] = useState([]);
-  const [selectedBannerID, setSelectedBannerID] = useState(null);
+  const [categoryIDs, setCategoryIDs] = useState([]);
+  const [selectedCategoryID, setSelectedCategoryID] = useState(null);
   const [previewImage, setPreviewImage] = useState(null);
   const [image, setImage] = useState();
 
   useEffect(() => {
     if (record) {
-      setSelectedBannerID(record.bannerIDs);
+      setSelectedCategoryID(record.categoryIDs);
       setPreviewImage(`${IMAGE_URL + record.img}`);
       setImage(record.img);
       form.setFieldsValue({
@@ -49,16 +49,16 @@ export const TwoSides = ({
     setImage(null);
   };
 
-  const singleBanners = async () => {
+  const category = async () => {
     try {
       const res = await fetcher({
-        pathname: "banner/singles",
+        pathname: "category",
         method: "GET",
         data: null,
         auth: true,
       });
       if (res) {
-        setBannerIDs(res.data);
+        setCategoryIDs(res.data);
       }
     } catch (error) {
       console.error("Error fetching single banners:", error);
@@ -71,14 +71,14 @@ export const TwoSides = ({
   };
 
   useEffect(() => {
-    singleBanners();
+    category();
   }, []);
 
   const onFinish = async (values) => {
     const data = {
       name: values.name,
       priority: values.priority,
-      bannerIDs: selectedBannerID,
+      categoryIDs: selectedCategoryID,
     };
     try {
       const res = await fetcher({
@@ -101,27 +101,7 @@ export const TwoSides = ({
       console.error("Error adding user:", error);
     }
   };
-  const beforeUpload = (file) => {
-    const isUnder500KB = file.size / 1024 / 1024 < 0.5;
-    if (!isUnder500KB) {
-      message.error("الصورة يجب أن تكون أقل من 500 كيلوبايت");
-    }
-    return isUnder500KB || Upload.LIST_IGNORE;
-  };
-  const handleUpload = (info) => {
-    const { status, response } = info.file;
 
-    if (status === "done") {
-      const filename = response?.filename || response?.filenames?.[0];
-      if (filename) {
-        setImage(filename);
-        setPreviewImage(response.url);
-        message.success(`${info.file.name} تم رفع الصورة بنجاح`);
-      }
-    } else if (status === "error") {
-      message.error(`${info.file.name} فشل رفع الصورة`);
-    }
-  };
   return (
     <Modal
       open={showModal}
@@ -160,30 +140,25 @@ export const TwoSides = ({
         </Row>
         <Row gutter={16}>
           <Col span={24}>
-            <Form.Item label="اختيار واجهة">
+            <Form.Item label="اختيار الاقسام">
               <Select
                 mode="multiple"
                 allowClear
-                placeholder="اختر واجهات"
-                value={selectedBannerID}
+                placeholder="اختيار الاقسام"
+                value={selectedCategoryID}
                 onChange={(value) => {
-                  if (value.length <= 2) {
-                    setSelectedBannerID(value);
-                  }
+                  setSelectedCategoryID(value);
                 }}
-                options={bannerIDs.map((banner) => ({
+                options={categoryIDs.map((banner) => ({
                   label: banner.name,
                   value: banner.id,
-                  disabled:
-                    selectedBannerID?.length >= 2 &&
-                    !selectedBannerID.includes(banner.id),
                 }))}
               />
 
-              {selectedBannerID?.length > 0 && (
+              {selectedCategoryID?.length > 0 && (
                 <div className="flex flex-col mt-2">
-                  {selectedBannerID.map((id) => {
-                    const banner = bannerIDs.find((b) => b.id === id);
+                  {selectedCategoryID.map((id) => {
+                    const banner = categoryIDs.find((b) => b.id === id);
                     return (
                       <div
                         key={id}
@@ -208,14 +183,16 @@ export const TwoSides = ({
                             {banner?.name || "غير معروف"}
                           </span>
                         </div>
-                        <IoIosClose
-                          className="text-2xl text-red-500"
-                          onClick={() => {
-                            setSelectedBannerID(
-                              selectedBannerID.filter((b) => b !== id)
-                            );
-                          }}
-                        />
+                        <button>
+                          <IoIosClose
+                            className="text-2xl text-red-500"
+                            onClick={() => {
+                              setSelectedCategoryID(
+                                selectedCategoryID.filter((b) => b !== id)
+                              );
+                            }}
+                          />
+                        </button>
                       </div>
                     );
                   })}

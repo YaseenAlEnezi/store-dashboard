@@ -4,18 +4,17 @@ import {
   Form,
   Input,
   InputNumber,
-  message,
   Modal,
   Row,
   Select,
-  Upload,
 } from "antd";
 import { useEffect, useState } from "react";
 import { showNotification } from "../../../utils/Notification";
 import { fetcher, IMAGE_URL, URL } from "../../../utils/api";
 import { IoIosClose } from "react-icons/io";
+import { Image } from "lucide-react";
 
-export const TwoSides = ({
+export const Items = ({
   showModal,
   setShowModal,
   getBanner,
@@ -23,14 +22,15 @@ export const TwoSides = ({
   setRecord,
 }) => {
   const [form] = Form.useForm();
-  const [bannerIDs, setBannerIDs] = useState([]);
-  const [selectedBannerID, setSelectedBannerID] = useState(null);
+  const [itemsIDs, setItemsIDs] = useState([]);
+  const [selectedItemsIDs, setSelectedItemsIDs] = useState(null);
+  const [search, setSearch] = useState("");
   const [previewImage, setPreviewImage] = useState(null);
   const [image, setImage] = useState();
 
   useEffect(() => {
     if (record) {
-      setSelectedBannerID(record.bannerIDs);
+      setSelectedItemsIDs(record.itemsIDs);
       setPreviewImage(`${IMAGE_URL + record.img}`);
       setImage(record.img);
       form.setFieldsValue({
@@ -49,16 +49,16 @@ export const TwoSides = ({
     setImage(null);
   };
 
-  const singleBanners = async () => {
+  const items = async () => {
     try {
       const res = await fetcher({
-        pathname: "banner/singles",
+        pathname: `product?search=${search}&page=1&pageSize=10`,
         method: "GET",
         data: null,
         auth: true,
       });
       if (res) {
-        setBannerIDs(res.data);
+        setItemsIDs(res.data);
       }
     } catch (error) {
       console.error("Error fetching single banners:", error);
@@ -71,14 +71,14 @@ export const TwoSides = ({
   };
 
   useEffect(() => {
-    singleBanners();
-  }, []);
+    items();
+  }, [search]);
 
   const onFinish = async (values) => {
     const data = {
       name: values.name,
       priority: values.priority,
-      bannerIDs: selectedBannerID,
+      productIDs: selectedItemsIDs,
     };
     try {
       const res = await fetcher({
@@ -101,27 +101,7 @@ export const TwoSides = ({
       console.error("Error adding user:", error);
     }
   };
-  const beforeUpload = (file) => {
-    const isUnder500KB = file.size / 1024 / 1024 < 0.5;
-    if (!isUnder500KB) {
-      message.error("الصورة يجب أن تكون أقل من 500 كيلوبايت");
-    }
-    return isUnder500KB || Upload.LIST_IGNORE;
-  };
-  const handleUpload = (info) => {
-    const { status, response } = info.file;
 
-    if (status === "done") {
-      const filename = response?.filename || response?.filenames?.[0];
-      if (filename) {
-        setImage(filename);
-        setPreviewImage(response.url);
-        message.success(`${info.file.name} تم رفع الصورة بنجاح`);
-      }
-    } else if (status === "error") {
-      message.error(`${info.file.name} فشل رفع الصورة`);
-    }
-  };
   return (
     <Modal
       open={showModal}
@@ -160,62 +140,66 @@ export const TwoSides = ({
         </Row>
         <Row gutter={16}>
           <Col span={24}>
-            <Form.Item label="اختيار واجهة">
+            <Form.Item label="اختيار العلامة التجارية">
               <Select
                 mode="multiple"
                 allowClear
-                placeholder="اختر واجهات"
-                value={selectedBannerID}
+                placeholder="اختيار العلامة التجارية"
+                value={selectedItemsIDs}
+                onSearch={setSearch}
                 onChange={(value) => {
-                  if (value.length <= 2) {
-                    setSelectedBannerID(value);
-                  }
+                  setSelectedItemsIDs(value);
                 }}
-                options={bannerIDs.map((banner) => ({
+                options={itemsIDs.map((banner) => ({
                   label: banner.name,
                   value: banner.id,
-                  disabled:
-                    selectedBannerID?.length >= 2 &&
-                    !selectedBannerID.includes(banner.id),
                 }))}
               />
 
-              {selectedBannerID?.length > 0 && (
+              {selectedItemsIDs?.length > 0 && (
                 <div className="flex flex-col mt-2">
-                  {selectedBannerID.map((id) => {
-                    const banner = bannerIDs.find((b) => b.id === id);
+                  {selectedItemsIDs.map((id) => {
+                    const banner = itemsIDs.find((b) => b.id === id);
                     return (
                       <div
                         key={id}
                         className="flex items-center justify-between gap-3 mb-2 border-b p-2"
                       >
                         <div className="flex items-center gap-2">
-                          <img
-                            src={
-                              banner?.img
-                                ? IMAGE_URL + banner.img
-                                : "/fallback.jpg"
-                            }
-                            alt={banner?.name || "غير معروف"}
-                            style={{
-                              width: 40,
-                              height: 40,
-                              objectFit: "cover",
-                              borderRadius: 8,
-                            }}
-                          />
+                          {banner?.images?.length > 0 ? (
+                            <img
+                              src={
+                                banner?.images[0]
+                                  ? IMAGE_URL + banner?.images[0]
+                                  : "/fallback.jpg"
+                              }
+                              alt={banner?.name || "غير معروف"}
+                              style={{
+                                width: 40,
+                                height: 40,
+                                objectFit: "cover",
+                                borderRadius: 8,
+                              }}
+                            />
+                          ) : (
+                            <div className="w-10 h-10 flex items-center justify-center bg-gray-200 rounded-md">
+                              <Image className="w-8 h-8 text-gray-400 object-cover" />
+                            </div>
+                          )}
                           <span className="text-sm font-medium text-gray-800">
                             {banner?.name || "غير معروف"}
                           </span>
                         </div>
-                        <IoIosClose
-                          className="text-2xl text-red-500"
-                          onClick={() => {
-                            setSelectedBannerID(
-                              selectedBannerID.filter((b) => b !== id)
-                            );
-                          }}
-                        />
+                        <button>
+                          <IoIosClose
+                            className="text-2xl text-red-500"
+                            onClick={() => {
+                              setSelectedItemsIDs(
+                                selectedItemsIDs.filter((b) => b !== id)
+                              );
+                            }}
+                          />
+                        </button>
                       </div>
                     );
                   })}

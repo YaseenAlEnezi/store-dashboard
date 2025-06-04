@@ -8,6 +8,12 @@ import { FaRegEdit } from "react-icons/fa";
 import { MdDeleteOutline } from "react-icons/md";
 import { IoSearchOutline } from "react-icons/io5";
 import { IoIosArrowBack, IoIosArrowForward } from "react-icons/io";
+import { TwoSides } from "./modal/twoSides";
+import { Category } from "./modal/category";
+import { Image } from "lucide-react";
+import { Brand } from "./modal/brand";
+import { Slider } from "./modal/slider";
+import { Items } from "./modal/items";
 
 export const BannerPage = () => {
   const [banner, setBanner] = useState([]);
@@ -18,10 +24,10 @@ export const BannerPage = () => {
   const [search, setSearch] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [showTwoSidesModal, setShowTwoSidesModal] = useState(false);
-  const [showSliderModal, setShowSliderModal] = useState(false);
-  const [showCategoryModal, setShowCategoryModal] = useState(false);
-  const [showItemsModal, setShowItemsModal] = useState(false);
   const [showBrandModal, setShowBrandModal] = useState(false);
+  const [showCategoryModal, setShowCategoryModal] = useState(false);
+  const [showSliderModal, setShowSliderModal] = useState(false);
+  const [showItemsModal, setShowItemsModal] = useState(false);
 
   const itemRender = (_, type, originalElement) => {
     if (type === "prev") {
@@ -114,13 +120,18 @@ export const BannerPage = () => {
       title: "الصورة",
       dataIndex: "img",
       key: "img",
-      render: (text, record) => (
-        <img
-          src={`${IMAGE_URL}${text}`}
-          alt={record.name}
-          className="w-10 h-10 rounded-md object-cover"
-        />
-      ),
+      render: (text, record) =>
+        text ? (
+          <img
+            src={`${IMAGE_URL}${text}`}
+            alt={record.name}
+            className="w-10 h-10 rounded-md object-cover"
+          />
+        ) : (
+          <div className="w-10 h-10 flex items-center justify-center bg-gray-200 rounded-md">
+            <Image className="w-8 h-8 text-gray-400 object-cover" />
+          </div>
+        ),
     },
     {
       title: "ألاسم",
@@ -214,6 +225,41 @@ export const BannerPage = () => {
         <AddModal
           showModal={showModal}
           setShowModal={setShowModal}
+          getBanner={getBanner}
+          record={record}
+          setRecord={setRecord}
+        />
+        <TwoSides
+          showModal={showTwoSidesModal}
+          setShowModal={setShowTwoSidesModal}
+          getBanner={getBanner}
+          record={record}
+          setRecord={setRecord}
+        />
+        <Category
+          showModal={showCategoryModal}
+          setShowModal={setShowCategoryModal}
+          getBanner={getBanner}
+          record={record}
+          setRecord={setRecord}
+        />
+        <Slider
+          showModal={showSliderModal}
+          setShowModal={setShowSliderModal}
+          getBanner={getBanner}
+          record={record}
+          setRecord={setRecord}
+        />
+        <Items
+          showModal={showItemsModal}
+          setShowModal={setShowItemsModal}
+          getBanner={getBanner}
+          record={record}
+          setRecord={setRecord}
+        />
+        <Brand
+          showModal={showBrandModal}
+          setShowModal={setShowBrandModal}
           getBanner={getBanner}
           record={record}
           setRecord={setRecord}

@@ -120,7 +120,7 @@ export const ProductPage = () => {
       key: "buyingPrice",
       render: (text) => (
         <Typography.Text className="text-gray-700" strong>
-          {text.toLocaleString("en")} د.ع
+          {text?.toLocaleString("en")} د.ع
         </Typography.Text>
       ),
     },
@@ -130,7 +130,7 @@ export const ProductPage = () => {
       key: "SellingPrice",
       render: (text) => (
         <Typography.Text className="text-gray-700" strong>
-          {text.toLocaleString("en")} د.ع
+          {text?.toLocaleString("en")} د.ع
         </Typography.Text>
       ),
     },

@@ -1,4 +1,4 @@
-export const URL = "http://localhost:5000/api/v1/admin/";
+export const URL = "http://localhost:5000/api/admin/";
 // export const URL = "https://car5x.com/api/v1/admin/";
 
 export const IMAGE_URL = "https://car5x.fra1.digitaloceanspaces.com/images/";

@@ -23,14 +23,14 @@ export const Brand = ({
   setRecord,
 }) => {
   const [form] = Form.useForm();
-  const [categoryIDs, setBrandIDs] = useState([]);
+  const [brandIDs, setBrandIDs] = useState([]);
   const [selectedBrandIDs, setSelectedBrandIDs] = useState(null);
   const [previewImage, setPreviewImage] = useState(null);
   const [image, setImage] = useState();
 
   useEffect(() => {
     if (record) {
-      setSelectedBrandIDs(record.categoryIDs);
+      setSelectedBrandIDs(record.brandIDs);
       setPreviewImage(`${IMAGE_URL + record.img}`);
       setImage(record.img);
       form.setFieldsValue({
@@ -78,7 +78,7 @@ export const Brand = ({
     const data = {
       name: values.name,
       priority: values.priority,
-      categoryIDs: selectedBrandIDs,
+      brandIDs: selectedBrandIDs,
     };
     try {
       const res = await fetcher({
@@ -149,7 +149,7 @@ export const Brand = ({
                 onChange={(value) => {
                   setSelectedBrandIDs(value);
                 }}
-                options={categoryIDs.map((banner) => ({
+                options={brandIDs.map((banner) => ({
                   label: banner.name,
                   value: banner.id,
                 }))}
@@ -158,7 +158,7 @@ export const Brand = ({
               {selectedBrandIDs?.length > 0 && (
                 <div className="flex flex-col mt-2">
                   {selectedBrandIDs.map((id) => {
-                    const banner = categoryIDs.find((b) => b.id === id);
+                    const banner = brandIDs.find((b) => b.id === id);
                     return (
                       <div
                         key={id}

@@ -24,14 +24,18 @@ export const Items = ({
   const [form] = Form.useForm();
   const [itemsIDs, setItemsIDs] = useState([]);
   const [selectedItemsIDs, setSelectedItemsIDs] = useState(null);
+  const [selectedProducts, setSelectedProducts] = useState([]);
   const [search, setSearch] = useState("");
   const [previewImage, setPreviewImage] = useState(null);
   const [image, setImage] = useState();
 
   useEffect(() => {
     if (record) {
-      setSelectedItemsIDs(record.itemsIDs);
-      setPreviewImage(`${IMAGE_URL + record.img}`);
+      setSelectedItemsIDs(record.productIDs || []);
+      setSelectedProducts(record.products || []);
+      setPreviewImage(
+        record.img ? `${IMAGE_URL + record.img}` : "/fallback.jpg"
+      );
       setImage(record.img);
       form.setFieldsValue({
         name: record.name,
@@ -149,6 +153,8 @@ export const Items = ({
                 onSearch={setSearch}
                 onChange={(value) => {
                   setSelectedItemsIDs(value);
+                  const selected = itemsIDs.filter((p) => value.includes(p.id));
+                  setSelectedProducts(selected);
                 }}
                 options={itemsIDs.map((banner) => ({
                   label: banner.name,
@@ -158,51 +164,50 @@ export const Items = ({
 
               {selectedItemsIDs?.length > 0 && (
                 <div className="flex flex-col mt-2">
-                  {selectedItemsIDs.map((id) => {
-                    const banner = itemsIDs.find((b) => b.id === id);
-                    return (
-                      <div
-                        key={id}
-                        className="flex items-center justify-between gap-3 mb-2 border-b p-2"
-                      >
-                        <div className="flex items-center gap-2">
-                          {banner?.images?.length > 0 ? (
-                            <img
-                              src={
-                                banner?.images[0]
-                                  ? IMAGE_URL + banner?.images[0]
-                                  : "/fallback.jpg"
-                              }
-                              alt={banner?.name || "غير معروف"}
-                              style={{
-                                width: 40,
-                                height: 40,
-                                objectFit: "cover",
-                                borderRadius: 8,
-                              }}
-                            />
-                          ) : (
-                            <div className="w-10 h-10 flex items-center justify-center bg-gray-200 rounded-md">
-                              <Image className="w-8 h-8 text-gray-400 object-cover" />
-                            </div>
-                          )}
-                          <span className="text-sm font-medium text-gray-800">
-                            {banner?.name || "غير معروف"}
-                          </span>
-                        </div>
-                        <button>
-                          <IoIosClose
-                            className="text-2xl text-red-500"
-                            onClick={() => {
-                              setSelectedItemsIDs(
-                                selectedItemsIDs.filter((b) => b !== id)
-                              );
+                  {selectedProducts.map((product) => (
+                    <div
+                      key={product.id}
+                      className="flex items-center justify-between gap-3 mb-2 border-b p-2"
+                    >
+                      <div className="flex items-center gap-2">
+                        {product?.images?.length > 0 ? (
+                          <img
+                            src={IMAGE_URL + product.images[0]}
+                            alt={product.name}
+                            style={{
+                              width: 40,
+                              height: 40,
+                              objectFit: "cover",
+                              borderRadius: 8,
                             }}
                           />
-                        </button>
+                        ) : (
+                          <div className="w-10 h-10 flex items-center justify-center bg-gray-200 rounded-md">
+                            <Image className="w-8 h-8 text-gray-400 object-cover" />
+                          </div>
+                        )}
+                        <span className="text-sm font-medium text-gray-800">
+                          {product.name}
+                        </span>
                       </div>
-                    );
-                  })}
+                      <button>
+                        <IoIosClose
+                          className="text-2xl text-red-500"
+                          onClick={() => {
+                            const filtered = selectedItemsIDs.filter(
+                              (id) => id !== product.id
+                            );
+                            setSelectedItemsIDs(filtered);
+                            setSelectedProducts(
+                              selectedProducts.filter(
+                                (p) => p.id !== product.id
+                              )
+                            );
+                          }}
+                        />
+                      </button>
+                    </div>
+                  ))}
                 </div>
               )}
             </Form.Item>

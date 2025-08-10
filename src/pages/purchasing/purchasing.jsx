@@ -16,9 +16,9 @@ import { DeleteOutlined } from "@ant-design/icons";
 import { useQuery } from "@tanstack/react-query";
 import { fetcher } from "../../utils/api";
 
-export const OnSite = () => {
+export const Purchasing = () => {
   const [search, setSearch] = useState("");
-  const [orderType, setOrderType] = useState("sale");
+  const [operationType, setOperationType] = useState("purchase"); // purchase or return
   const [currency, setCurrency] = useState("IQD");
   const [data, setData] = useState([
     {
@@ -26,8 +26,8 @@ export const OnSite = () => {
       barcode: "",
       name: "",
       quantity: 1,
-      price: "",
-      generalPrice: "",
+      purchasePrice: "",
+      sellingPrice: "",
       total: 0,
       location: "",
     },
@@ -84,19 +84,21 @@ export const OnSite = () => {
         if (item.key === key) {
           const newItem = { ...item, [field]: value };
 
-          // Calculate total based on order type
+          // Calculate total based on operation type
           if (
             field === "quantity" ||
-            field === "price" ||
-            field === "generalPrice"
+            field === "purchasePrice" ||
+            field === "sellingPrice"
           ) {
-            if (orderType === "sale") {
-              newItem.total =
-                (Number(newItem.quantity) || 0) * (Number(newItem.price) || 0);
-            } else {
+            if (operationType === "purchase") {
               newItem.total =
                 (Number(newItem.quantity) || 0) *
-                (Number(newItem.generalPrice) || 0);
+                (Number(newItem.purchasePrice) || 0);
+            } else {
+              // For returns, we might want to show the return value
+              newItem.total =
+                (Number(newItem.quantity) || 0) *
+                (Number(newItem.purchasePrice) || 0);
             }
           }
 
@@ -114,8 +116,8 @@ export const OnSite = () => {
       barcode: "",
       name: "",
       quantity: 1,
-      price: 0,
-      generalPrice: 0,
+      purchasePrice: 0,
+      sellingPrice: 0,
       total: 0,
       location: "",
     };
@@ -136,14 +138,16 @@ export const OnSite = () => {
     setData((prevData) =>
       prevData.map((item) => {
         if (item.key === recordKey) {
-          const basePrice = productData.SellingPrice || productData.price || 0;
+          const basePrice = productData.purchasePrice || productData.price || 0;
+          const sellingPrice =
+            productData.SellingPrice || productData.sellingPrice || 0;
           return {
             ...item,
             id: productData.id,
             name: productData.name,
             barcode: productData.barcode || "",
-            price: basePrice,
-            generalPrice: basePrice,
+            purchasePrice: basePrice,
+            sellingPrice: sellingPrice,
             location: productData.location || "",
             total: (item.quantity || 1) * basePrice,
           };
@@ -155,55 +159,73 @@ export const OnSite = () => {
 
   const grandTotal = useMemo(() => {
     return data.reduce((sum, item) => {
-      if (orderType === "sale") {
-        return sum + Number(item.quantity || 0) * Number(item.price || 0);
-      } else {
-        return (
-          sum + Number(item.quantity || 0) * Number(item.generalPrice || 0)
-        );
-      }
+      return sum + Number(item.quantity || 0) * Number(item.purchasePrice || 0);
     }, 0);
-  }, [data, orderType]);
+  }, [data]);
+
+  const changeTab = (key) => {
+    setOperationType(key);
+    setData([
+      {
+        key: Date.now(),
+        barcode: "",
+        name: "",
+        quantity: 1,
+        purchasePrice: "",
+        sellingPrice: "",
+        total: 0,
+        location: "",
+      },
+    ]);
+    form.resetFields();
+  };
 
   const submit = async () => {
     if (data?.[0]?.id === undefined || data?.[0]?.id === null) {
       message.info("يجب أن يكون هناك صف واحد على الأقل");
       return;
     }
-    const name = form.getFieldValue("customerName");
-    const phone = form.getFieldValue("customerPhone");
+
+    const supplierName = form.getFieldValue("supplierName");
+    const notes = form.getFieldValue("notes");
+
     const payload = {
-      user: {
-        name: phone ? form.getFieldValue("customerName") : null,
-        phone: phone ? form.getFieldValue("customerPhone") : null,
+      supplier: {
+        name: supplierName,
       },
       items: data.map((item) => ({
         id: item.id,
         barcode: item.barcode,
         name: item.name,
         quantity: parseInt(item.quantity),
-        price:
-          orderType === "sale"
-            ? parseInt(item.price)
-            : parseInt(item.generalPrice),
+        purchasePrice: parseInt(item.purchasePrice),
+        sellingPrice: parseInt(item.sellingPrice),
         location: item.location,
       })),
-      address: form.getFieldValue("address"),
-      orderType: orderType,
+      notes: notes,
+      operationType: operationType,
       currency: currency,
     };
 
     console.log(payload);
 
     try {
+      const endpoint = 
+        operationType === "purchase"
+          ? "create-purchase"
+          : "create-purchase-return";
       const res = await fetcher({
-        pathname: "create-order",
+        pathname: endpoint,
         method: "POST",
         data: payload,
         auth: true,
       });
       if (res.success) {
-        message.success("تم اضافة المنتجات بنجاح");
+        message.success(
+          operationType === "purchase"
+            ? "تم إنشاء فاتورة الشراء بنجاح"
+            : "تم إنشاء فاتورة إرجاع الشراء بنجاح"
+        );
         form.resetFields();
         setData([
           {
@@ -211,18 +233,18 @@ export const OnSite = () => {
             barcode: "",
             name: "",
             quantity: 1,
-            price: "",
-            generalPrice: "",
+            purchasePrice: "",
+            sellingPrice: "",
             total: 0,
             location: "",
           },
         ]);
         refetch();
       } else {
-        message.error("فشل في اضافة المنتجات");
+        message.error("فشل في إنشاء الفاتورة");
       }
     } catch (error) {
-      message.error("فشل في اضافة المنتجات");
+      message.error("فشل في إنشاء الفاتورة");
     }
   };
 
@@ -280,17 +302,15 @@ export const OnSite = () => {
       key: "quantity",
       width: 100,
       render: (text, record) => (
-        <>
-          <Input
-            type="number"
-            min={1}
-            value={record.quantity}
-            onChange={(e) =>
-              handleInputChange(e.target.value, record.key, "quantity")
-            }
-            placeholder="الكمية"
-          />
-        </>
+        <Input
+          type="number"
+          min={1}
+          value={record.quantity}
+          onChange={(e) =>
+            handleInputChange(e.target.value, record.key, "quantity")
+          }
+          placeholder="الكمية"
+        />
       ),
     },
     {
@@ -301,47 +321,39 @@ export const OnSite = () => {
       render: (text, record) => <p placeholder="الباركود">{record.barcode}</p>,
     },
     {
-      title: orderType === "sale" ? "السعر" : "سعر الشراء",
-      dataIndex: orderType === "sale" ? "price" : "generalPrice",
-      key: orderType === "sale" ? "price" : "generalPrice",
+      title: "سعر الشراء",
+      dataIndex: "purchasePrice",
+      key: "purchasePrice",
       width: 120,
       render: (text, record) => (
         <Input
           type="number"
           min={0}
-          value={orderType === "sale" ? record.price : record.generalPrice}
+          value={record.purchasePrice}
           onChange={(e) =>
-            handleInputChange(
-              e.target.value,
-              record.key,
-              orderType === "sale" ? "price" : "generalPrice"
-            )
+            handleInputChange(e.target.value, record.key, "purchasePrice")
           }
-          placeholder={orderType === "sale" ? "السعر" : "سعر الشراء"}
+          placeholder="سعر الشراء"
         />
       ),
     },
-    orderType === "purchase"
-      ? {
-          title: "سعر البيع",
-          dataIndex: "generalPrice",
-          key: "generalPrice",
-          width: 120,
-          render: (text, record) => {
-            return (
-              <Input
-                type="number"
-                min={0}
-                value={record.generalPrice}
-                onChange={(e) =>
-                  handleInputChange(e.target.value, record.key, "generalPrice")
-                }
-                placeholder="سعر البيع"
-              />
-            );
-          },
-        }
-      : null,
+    {
+      title: "سعر البيع",
+      dataIndex: "sellingPrice",
+      key: "sellingPrice",
+      width: 120,
+      render: (text, record) => (
+        <Input
+          type="number"
+          min={0}
+          value={record.sellingPrice}
+          onChange={(e) =>
+            handleInputChange(e.target.value, record.key, "sellingPrice")
+          }
+          placeholder="سعر البيع"
+        />
+      ),
+    },
     {
       title: "المجموع",
       dataIndex: "total",
@@ -349,10 +361,7 @@ export const OnSite = () => {
       width: 120,
       render: (text, record) => {
         const total =
-          Number(record.quantity || 0) *
-          Number(
-            orderType === "sale" ? record.price : record.generalPrice || 0
-          );
+          Number(record.quantity || 0) * Number(record.purchasePrice || 0);
         return (
           <span className="text-nowrap font-semibold">
             {total.toFixed(2)} {getCurrencySymbol()}
@@ -369,6 +378,15 @@ export const OnSite = () => {
           danger
           icon={<DeleteOutlined />}
           onClick={() => deleteRow(record.key)}
+          onKeyDown={(e) => {
+            if (e.key === "Tab") {
+              if (record.purchasePrice > 0 && record.name !== "") {
+                addEmptyRow();
+              } else {
+                e.preventDefault();
+              }
+            }
+          }}
           size="small"
         />
       ),
@@ -377,32 +395,36 @@ export const OnSite = () => {
 
   return (
     <Container width="100%">
-      <div className="mb-4 flex flex-wrap justify-between items-center">
-        <h1 className="text-3xl font-bold">أنشاء فاتورة</h1>
-        <div className="flex justify-end items-center gap-4 mt-2 sm:mt-0">
-          <div className="flex flex-col items-start">
-            <label className="text-sm text-gray-600 mb-1">نوع الفاتورة</label>
-            <Select
-              value={orderType}
-              className="w-[150px]"
-              size="large"
-              options={[
-                { value: "sale", label: "فاتورة بيع" },
-                { value: "purchase", label: "فاتورة شراء" },
-              ]}
-              onChange={(value) => setOrderType(value)}
-            />
-          </div>
-          <div className="flex flex-col items-start">
-            <label className="text-sm text-gray-600 mb-1">العملة</label>
-            <Select
-              value={currency}
-              className="w-[200px]"
-              size="large"
-              options={currencyOptions}
-              onChange={(value) => setCurrency(value)}
-            />
-          </div>
+      <div className="mb-4 flex justify-between items-center">
+        <h1 className="text-3xl font-bold">
+          {" "}
+          {operationType === "purchase"
+            ? "فاتورة شراء جديدة"
+            : "فاتورة إرجاع مشتريات"}
+        </h1>
+        <div className="flex items-center border border-gray-300 rounded-xl">
+          <button
+            className="px-4 py-2 rounded-r-xl"
+            onClick={() => changeTab("purchase")}
+            style={{
+              backgroundColor:
+                operationType === "purchase" ? "#FFED03" : "#FAFAFA",
+              opacity: operationType === "purchase" ? 1 : 0.5,
+            }}
+          >
+            فاتورة مشتريات
+          </button>
+          <button
+            className=" px-4 py-2 rounded-l-xl"
+            onClick={() => changeTab("return")}
+            style={{
+              backgroundColor:
+                operationType === "return" ? "#FFED03" : "#FAFAFA",
+              opacity: operationType === "return" ? 1 : 0.5,
+            }}
+          >
+            إرجاع مشتريات
+          </button>
         </div>
       </div>
 
@@ -410,69 +432,59 @@ export const OnSite = () => {
         <Row gutter={[16, 16]}>
           <Col xs={24} sm={12} md={6}>
             <Form.Item
-              label={orderType === "sale" ? "اسم الزبون" : "اسم المورد"}
-              name="customerName"
-              rules={[{ required: true, message: "أسم الزبون مطلوب" }]}
+              label="اسم المورد"
+              name="supplierName"
+              rules={[{ required: true, message: "اسم المورد مطلوب" }]}
             >
-              <Input placeholder="اسم الزبون" />
+              <Input placeholder="اسم المورد" />
             </Form.Item>
           </Col>
-          {orderType === "sale" && (
-            <>
-              <Col xs={24} sm={12} md={6}>
-                <Form.Item label="رقم هاتف الزبون" name="customerPhone">
-                  <Input
-                    showCount
-                    placeholder="رقم هاتف الزبون"
-                    maxLength={11}
-                  />
-                </Form.Item>
-              </Col>
-              <Col xs={24} sm={12} md={6}>
-                <Form.Item label="عنوان الزبون" name="address">
-                  <Input placeholder="عنوان الزبون" />
-                </Form.Item>
-              </Col>
-            </>
-          )}
+
+          <Col xs={24} sm={12} md={6}>
+            <Form.Item
+              label={operationType === "purchase" ? "ملاحظات" : "سبب الإرجاع"}
+              name="notes"
+            >
+              <Input
+                placeholder={
+                  operationType === "purchase"
+                    ? "ملاحظات إضافية"
+                    : "سبب الإرجاع"
+                }
+              />
+            </Form.Item>
+          </Col>
+          <Col xs={24} sm={12} md={6}>
+            <Form.Item label="العملة" name="currency">
+              <Select
+                options={currencyOptions}
+                defaultValue={currency}
+                value={currency}
+                onChange={(value) => setCurrency(value)}
+              />
+            </Form.Item>
+          </Col>
         </Row>
 
         <div className="mb-4 mt-4 overflow-x-auto">
+          <div className="flex justify-end mb-2">
+            <Button type="dashed" onClick={addEmptyRow}>
+              إضافة صف جديد
+            </Button>
+          </div>
           <Table
-            columns={columns.filter(Boolean)}
+            columns={columns}
             dataSource={data}
             pagination={false}
             scroll={{ x: "max-content" }}
             rowKey="key"
             bordered
-            render={() => (
-              <>
-                <Table.Row>
-                  <Table.Cell
-                    colSpan={orderType === "sale" ? 6 : 10}
-                    className="text-right"
-                  >
-                    <strong>المجموع الكلي:</strong>
-                  </Table.Cell>
-                  <Table.Cell colSpan={orderType === "sale" ? 2 : 4}>
-                    <span className="text-lg font-bold">
-                      {grandTotal.toFixed(2)} {getCurrencySymbol()}
-                    </span>
-                  </Table.Cell>
-                </Table.Row>
-                <Table.Row>
-                  <Table.Cell colSpan={8} className="text-right">
-                    <strong>إضافة صف جديد:</strong>
-                  </Table.Cell>
-                </Table.Row>
-              </>
-            )}
             summary={() => (
               <Table.Summary fixed="bottom">
                 <Table.Summary.Row>
                   <Table.Summary.Cell
                     index={0}
-                    colSpan={orderType === "sale" ? 6 : 7}
+                    colSpan={7}
                     className="text-right"
                   >
                     <strong>المجموع الكلي:</strong>
@@ -491,7 +503,9 @@ export const OnSite = () => {
         <div className="flex justify-end gap-4 mt-4">
           <Button type="default">إلغاء</Button>
           <Button type="primary" htmlType="submit">
-            حفظ القائمة
+            {operationType === "purchase"
+              ? "حفظ فاتورة الشراء"
+              : "حفظ فاتورة الإرجاع"}
           </Button>
         </div>
       </Form>

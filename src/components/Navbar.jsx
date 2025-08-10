@@ -23,8 +23,18 @@ export default function Navbar() {
 
   const navItems = [
     {
-      name: "البيع",
+      name: "ألفواتير",
       href: "/onSite",
+      current: true,
+    },
+    {
+      name: "المشتريات",
+      href: "/purchasing",
+      current: true,
+    },
+    {
+      name: "المبيعات",
+      href: "/sales",
       current: true,
     },
     {

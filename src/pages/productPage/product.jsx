@@ -14,12 +14,14 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { showNotification } from "../../utils/Notification";
 import { fetcher, IMAGE_URL } from "../../utils/api";
 import { ModalForm } from "./modal/modal";
+import { TransactionHistoryModal } from "./modal/transactionHistory";
 import { FaRegEdit } from "react-icons/fa";
 import { MdDeleteOutline } from "react-icons/md";
 import { IoSearchOutline } from "react-icons/io5";
 import { IoIosArrowBack, IoIosArrowForward } from "react-icons/io";
 import { ImagesModal } from "./modal/imageModal";
 import { AiOutlinePlus } from "react-icons/ai";
+import { HiOutlineClipboardDocumentList } from "react-icons/hi2";
 
 export const ProductPage = () => {
   const [page, setPage] = useState(1);
@@ -28,6 +30,8 @@ export const ProductPage = () => {
   const [record, setRecord] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [showModalImages, setShowModalImages] = useState(false);
+  const [showTransactionHistory, setShowTransactionHistory] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState(null);
 
   const itemRender = (_, type, originalElement) => {
     if (type === "prev") {
@@ -126,11 +130,31 @@ export const ProductPage = () => {
     },
     {
       title: "البيع",
-      dataIndex: "SellingPrice",
-      key: "SellingPrice",
+      dataIndex: "generalPrice",
+      key: "generalPrice",
       render: (text) => (
         <Typography.Text className="text-gray-700" strong>
           {text?.toLocaleString("en")} د.ع
+        </Typography.Text>
+      ),
+    },
+    {
+      title: "متوسط التكلفة",
+      dataIndex: "averageCost",
+      key: "averageCost",
+      render: (text) => (
+        <Typography.Text className="text-green-600" strong>
+          {text?.toLocaleString("en")} د.ع
+        </Typography.Text>
+      ),
+    },
+    {
+      title: "آخر شراء",
+      dataIndex: "lastPurchaseDate",
+      key: "lastPurchaseDate",
+      render: (text) => (
+        <Typography.Text className="text-gray-500">
+          {text ? new Date(text).toLocaleDateString("ar-EG") : "غير محدد"}
         </Typography.Text>
       ),
     },
@@ -167,6 +191,14 @@ export const ProductPage = () => {
       key: "edit",
       render: (_, record) => (
         <div className="flex items-center gap-2">
+          <HiOutlineClipboardDocumentList
+            onClick={() => {
+              setSelectedProduct(record);
+              setShowTransactionHistory(true);
+            }}
+            className="text-purple-500 text-xl cursor-pointer"
+            title="تاريخ المعاملات"
+          />
           <Popconfirm
             title="هل أنت متأكد؟"
             description="هل أنت متأكد من حذف الحساب؟"
@@ -238,13 +270,19 @@ export const ProductPage = () => {
           record={record}
           setRecord={setRecord}
         />
-
         <ImagesModal
           showModal={showModalImages}
           setShowModal={setShowModalImages}
-          getProducts={refetch}
           record={record}
-          setRecord={setRecord}
+        />
+        <TransactionHistoryModal
+          visible={showTransactionHistory}
+          onCancel={() => {
+            setShowTransactionHistory(false);
+            setSelectedProduct(null);
+          }}
+          productId={selectedProduct?.id}
+          productName={selectedProduct?.name}
         />
       </Container>
     </div>

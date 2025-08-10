@@ -89,25 +89,85 @@ export const OrderPage = () => {
       render: (text, record) => <div className="">{text}</div>,
     },
     {
-      title: "الزبون",
+      title: "نوع الطلب",
+      dataIndex: "orderType",
+      key: "orderType",
+      render: (text, record) => (
+        <Tag
+          className="text-[14px] font-semibold"
+          color={record.orderType === "purchase" ? "orange" : "green"}
+        >
+          {record.orderType === "purchase" ? "شراء" : "بيع"}
+        </Tag>
+      ),
+    },
+    {
+      title: "المورد/الزبون",
       dataIndex: "user",
       key: "user",
-      render: (text, record) => (
-        <div className="flex flex-col items-start gap-2">
-          <Typography.Text strong>{record.user.name}</Typography.Text>
-          <Typography.Text>{record.address}</Typography.Text>
-        </div>
-      ),
+      render: (text, record) => {
+        if (record.orderType === "purchase") {
+          return (
+            <div className="flex flex-col items-start gap-2">
+              <Typography.Text strong>
+                {record.supplierName || "غير محدد"}
+              </Typography.Text>
+              <Typography.Text>
+                {record.supplierPhone || "غير محدد"}
+              </Typography.Text>
+            </div>
+          );
+        } else {
+          return (
+            <div className="flex flex-col items-start gap-2">
+              <Typography.Text strong>
+                {record.user?.name || "غير محدد"}
+              </Typography.Text>
+              <Typography.Text>{record.address || "غير محدد"}</Typography.Text>
+            </div>
+          );
+        }
+      },
     },
     {
       title: "التواصل",
       dataIndex: "phone",
       key: "phone",
-      render: (text, record) => (
-        <Typography.Text className="text-[14px] font-semibold">
-          {record.user.phone}
-        </Typography.Text>
-      ),
+      render: (text, record) => {
+        if (record.orderType === "purchase") {
+          return (
+            <Typography.Text className="text-[14px] font-semibold">
+              {record.supplierPhone || "غير محدد"}
+            </Typography.Text>
+          );
+        } else {
+          return (
+            <Typography.Text className="text-[14px] font-semibold">
+              {record.user?.phone || "غير محدد"}
+            </Typography.Text>
+          );
+        }
+      },
+    },
+    {
+      title: "التكلفة",
+      dataIndex: "totalCost",
+      key: "totalCost",
+      render: (text, record) => {
+        if (record.orderType === "purchase") {
+          return (
+            <Typography.Text className="text-[14px] font-semibold text-green-600">
+              {record.totalCost ? `${record.totalCost} د.ع` : "غير محدد"}
+            </Typography.Text>
+          );
+        } else {
+          return (
+            <Typography.Text className="text-[14px] font-semibold text-blue-600">
+              {record.dollarPrice ? `${record.dollarPrice} $` : "غير محدد"}
+            </Typography.Text>
+          );
+        }
+      },
     },
     {
       title: "الحالة",
@@ -130,20 +190,17 @@ export const OrderPage = () => {
               : "red"
           }
         >
-          {record.status}
-        </Tag>
-      ),
-    },
-    {
-      title: "نوع الطلب",
-      dataIndex: "orderType",
-      key: "orderType",
-      render: (text, record) => (
-        <Tag
-          className="text-[14px] font-semibold"
-          color={record.orderType ? "blue" : "green"}
-        >
-          {record.orderType}
+          {record.status === "created"
+            ? "تم إنشاؤه"
+            : record.status === "accepted"
+            ? "مقبول"
+            : record.status === "shipping"
+            ? "قيد الشحن"
+            : record.status === "delivered"
+            ? "تم التسليم"
+            : record.status === "cancelled"
+            ? "ملغي"
+            : record.status}
         </Tag>
       ),
     },
@@ -170,6 +227,13 @@ export const OrderPage = () => {
         <div className="mb-4 flex justify-between">
           <h1 className="text-3xl font-bold">الطلبات</h1>
           <div className="flex justify-end items-end w-1/4 gap-4">
+            <Button
+              type="primary"
+              onClick={() => Navigate("/create-order")}
+              className="bg-blue-500"
+            >
+              إنشاء طلب جديد
+            </Button>
             <Input
               placeholder="بحث عن مستخدم"
               type="text"

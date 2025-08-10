@@ -16,9 +16,9 @@ import { DeleteOutlined } from "@ant-design/icons";
 import { useQuery } from "@tanstack/react-query";
 import { fetcher } from "../../utils/api";
 
-export const OnSite = () => {
+export const Sales = () => {
   const [search, setSearch] = useState("");
-  const [orderType, setOrderType] = useState("sale");
+  const [operationType, setOperationType] = useState("sale"); // sale or return
   const [currency, setCurrency] = useState("IQD");
   const [data, setData] = useState([
     {
@@ -27,7 +27,6 @@ export const OnSite = () => {
       name: "",
       quantity: 1,
       price: "",
-      generalPrice: "",
       total: 0,
       location: "",
     },
@@ -84,20 +83,10 @@ export const OnSite = () => {
         if (item.key === key) {
           const newItem = { ...item, [field]: value };
 
-          // Calculate total based on order type
-          if (
-            field === "quantity" ||
-            field === "price" ||
-            field === "generalPrice"
-          ) {
-            if (orderType === "sale") {
-              newItem.total =
-                (Number(newItem.quantity) || 0) * (Number(newItem.price) || 0);
-            } else {
-              newItem.total =
-                (Number(newItem.quantity) || 0) *
-                (Number(newItem.generalPrice) || 0);
-            }
+          // Calculate total
+          if (field === "quantity" || field === "price") {
+            newItem.total =
+              (Number(newItem.quantity) || 0) * (Number(newItem.price) || 0);
           }
 
           return newItem;
@@ -115,7 +104,6 @@ export const OnSite = () => {
       name: "",
       quantity: 1,
       price: 0,
-      generalPrice: 0,
       total: 0,
       location: "",
     };
@@ -136,16 +124,16 @@ export const OnSite = () => {
     setData((prevData) =>
       prevData.map((item) => {
         if (item.key === recordKey) {
-          const basePrice = productData.SellingPrice || productData.price || 0;
+          const sellingPrice =
+            productData.SellingPrice || productData.price || 0;
           return {
             ...item,
             id: productData.id,
             name: productData.name,
             barcode: productData.barcode || "",
-            price: basePrice,
-            generalPrice: basePrice,
+            price: sellingPrice,
             location: productData.location || "",
-            total: (item.quantity || 1) * basePrice,
+            total: (item.quantity || 1) * sellingPrice,
           };
         }
         return item;
@@ -155,55 +143,73 @@ export const OnSite = () => {
 
   const grandTotal = useMemo(() => {
     return data.reduce((sum, item) => {
-      if (orderType === "sale") {
-        return sum + Number(item.quantity || 0) * Number(item.price || 0);
-      } else {
-        return (
-          sum + Number(item.quantity || 0) * Number(item.generalPrice || 0)
-        );
-      }
+      return sum + Number(item.quantity || 0) * Number(item.price || 0);
     }, 0);
-  }, [data, orderType]);
+  }, [data]);
+
+  const changeTab = (key) => {
+    setOperationType(key);
+    setData([
+      {
+        key: Date.now(),
+        barcode: "",
+        name: "",
+        quantity: 1,
+        price: "",
+        total: 0,
+        location: "",
+      },
+    ]);
+    form.resetFields();
+  };
 
   const submit = async () => {
     if (data?.[0]?.id === undefined || data?.[0]?.id === null) {
       message.info("يجب أن يكون هناك صف واحد على الأقل");
       return;
     }
-    const name = form.getFieldValue("customerName");
-    const phone = form.getFieldValue("customerPhone");
+
+    const customerName = form.getFieldValue("customerName");
+    const customerPhone = form.getFieldValue("customerPhone");
+    const address = form.getFieldValue("address");
+    const notes = form.getFieldValue("notes");
+
     const payload = {
-      user: {
-        name: phone ? form.getFieldValue("customerName") : null,
-        phone: phone ? form.getFieldValue("customerPhone") : null,
+      customer: {
+        name: customerName,
+        phone: customerPhone,
       },
       items: data.map((item) => ({
         id: item.id,
         barcode: item.barcode,
         name: item.name,
         quantity: parseInt(item.quantity),
-        price:
-          orderType === "sale"
-            ? parseInt(item.price)
-            : parseInt(item.generalPrice),
+        price: parseInt(item.price),
         location: item.location,
       })),
-      address: form.getFieldValue("address"),
-      orderType: orderType,
+      address: address,
+      notes: notes,
+      operationType: operationType,
       currency: currency,
     };
 
     console.log(payload);
 
     try {
+      const endpoint =
+        operationType === "sale" ? "create-sale" : "create-sale-return";
       const res = await fetcher({
-        pathname: "create-order",
+        pathname: endpoint,
         method: "POST",
         data: payload,
         auth: true,
       });
       if (res.success) {
-        message.success("تم اضافة المنتجات بنجاح");
+        message.success(
+          operationType === "sale"
+            ? "تم إنشاء فاتورة البيع بنجاح"
+            : "تم إنشاء فاتورة إرجاع البيع بنجاح"
+        );
         form.resetFields();
         setData([
           {
@@ -212,17 +218,16 @@ export const OnSite = () => {
             name: "",
             quantity: 1,
             price: "",
-            generalPrice: "",
             total: 0,
             location: "",
           },
         ]);
         refetch();
       } else {
-        message.error("فشل في اضافة المنتجات");
+        message.error("فشل في إنشاء الفاتورة");
       }
     } catch (error) {
-      message.error("فشل في اضافة المنتجات");
+      message.error("فشل في إنشاء الفاتورة");
     }
   };
 
@@ -280,17 +285,15 @@ export const OnSite = () => {
       key: "quantity",
       width: 100,
       render: (text, record) => (
-        <>
-          <Input
-            type="number"
-            min={1}
-            value={record.quantity}
-            onChange={(e) =>
-              handleInputChange(e.target.value, record.key, "quantity")
-            }
-            placeholder="الكمية"
-          />
-        </>
+        <Input
+          type="number"
+          min={1}
+          value={record.quantity}
+          onChange={(e) =>
+            handleInputChange(e.target.value, record.key, "quantity")
+          }
+          placeholder="الكمية"
+        />
       ),
     },
     {
@@ -301,58 +304,29 @@ export const OnSite = () => {
       render: (text, record) => <p placeholder="الباركود">{record.barcode}</p>,
     },
     {
-      title: orderType === "sale" ? "السعر" : "سعر الشراء",
-      dataIndex: orderType === "sale" ? "price" : "generalPrice",
-      key: orderType === "sale" ? "price" : "generalPrice",
+      title: "السعر",
+      dataIndex: "price",
+      key: "price",
       width: 120,
       render: (text, record) => (
         <Input
           type="number"
           min={0}
-          value={orderType === "sale" ? record.price : record.generalPrice}
+          value={record.price}
           onChange={(e) =>
-            handleInputChange(
-              e.target.value,
-              record.key,
-              orderType === "sale" ? "price" : "generalPrice"
-            )
+            handleInputChange(e.target.value, record.key, "price")
           }
-          placeholder={orderType === "sale" ? "السعر" : "سعر الشراء"}
+          placeholder="السعر"
         />
       ),
     },
-    orderType === "purchase"
-      ? {
-          title: "سعر البيع",
-          dataIndex: "generalPrice",
-          key: "generalPrice",
-          width: 120,
-          render: (text, record) => {
-            return (
-              <Input
-                type="number"
-                min={0}
-                value={record.generalPrice}
-                onChange={(e) =>
-                  handleInputChange(e.target.value, record.key, "generalPrice")
-                }
-                placeholder="سعر البيع"
-              />
-            );
-          },
-        }
-      : null,
     {
       title: "المجموع",
       dataIndex: "total",
       key: "total",
       width: 120,
       render: (text, record) => {
-        const total =
-          Number(record.quantity || 0) *
-          Number(
-            orderType === "sale" ? record.price : record.generalPrice || 0
-          );
+        const total = Number(record.quantity || 0) * Number(record.price || 0);
         return (
           <span className="text-nowrap font-semibold">
             {total.toFixed(2)} {getCurrencySymbol()}
@@ -377,22 +351,24 @@ export const OnSite = () => {
 
   return (
     <Container width="100%">
-      <div className="mb-4 flex flex-wrap justify-between items-center">
-        <h1 className="text-3xl font-bold">أنشاء فاتورة</h1>
+      <div className="mb-4">
+        <h1 className="text-3xl font-bold mb-4">إدارة المبيعات</h1>
+      </div>
+
+      <div className="flex justify-end gap-4 mt-4">
+        <Button type="primary" onClick={() => changeTab("sale")}>
+          فاتورة بيع
+        </Button>
+        <Button type="primary" onClick={() => changeTab("return")}>
+          فاتورة إرجاع
+        </Button>
+      </div>
+
+      <div className="mb-4 mt-4 flex flex-wrap justify-between items-center">
+        <h2 className="text-2xl font-bold">
+          {operationType === "sale" ? "فاتورة بيع جديدة" : "فاتورة إرجاع بيع"}
+        </h2>
         <div className="flex justify-end items-center gap-4 mt-2 sm:mt-0">
-          <div className="flex flex-col items-start">
-            <label className="text-sm text-gray-600 mb-1">نوع الفاتورة</label>
-            <Select
-              value={orderType}
-              className="w-[150px]"
-              size="large"
-              options={[
-                { value: "sale", label: "فاتورة بيع" },
-                { value: "purchase", label: "فاتورة شراء" },
-              ]}
-              onChange={(value) => setOrderType(value)}
-            />
-          </div>
           <div className="flex flex-col items-start">
             <label className="text-sm text-gray-600 mb-1">العملة</label>
             <Select
@@ -410,69 +386,58 @@ export const OnSite = () => {
         <Row gutter={[16, 16]}>
           <Col xs={24} sm={12} md={6}>
             <Form.Item
-              label={orderType === "sale" ? "اسم الزبون" : "اسم المورد"}
+              label="اسم الزبون"
               name="customerName"
-              rules={[{ required: true, message: "أسم الزبون مطلوب" }]}
+              rules={[{ required: true, message: "اسم الزبون مطلوب" }]}
             >
               <Input placeholder="اسم الزبون" />
             </Form.Item>
           </Col>
-          {orderType === "sale" && (
-            <>
-              <Col xs={24} sm={12} md={6}>
-                <Form.Item label="رقم هاتف الزبون" name="customerPhone">
-                  <Input
-                    showCount
-                    placeholder="رقم هاتف الزبون"
-                    maxLength={11}
-                  />
-                </Form.Item>
-              </Col>
-              <Col xs={24} sm={12} md={6}>
-                <Form.Item label="عنوان الزبون" name="address">
-                  <Input placeholder="عنوان الزبون" />
-                </Form.Item>
-              </Col>
-            </>
+          <Col xs={24} sm={12} md={6}>
+            <Form.Item label="رقم هاتف الزبون" name="customerPhone">
+              <Input showCount placeholder="رقم هاتف الزبون" maxLength={11} />
+            </Form.Item>
+          </Col>
+          {operationType === "sale" && (
+            <Col xs={24} sm={12} md={6}>
+              <Form.Item label="عنوان الزبون" name="address">
+                <Input placeholder="عنوان الزبون" />
+              </Form.Item>
+            </Col>
           )}
+          <Col xs={24} sm={12} md={6}>
+            <Form.Item
+              label={operationType === "sale" ? "ملاحظات" : "سبب الإرجاع"}
+              name="notes"
+            >
+              <Input
+                placeholder={
+                  operationType === "sale" ? "ملاحظات إضافية" : "سبب الإرجاع"
+                }
+              />
+            </Form.Item>
+          </Col>
         </Row>
 
         <div className="mb-4 mt-4 overflow-x-auto">
+          <div className="flex justify-end mb-2">
+            <Button type="dashed" onClick={addEmptyRow}>
+              إضافة صف جديد
+            </Button>
+          </div>
           <Table
-            columns={columns.filter(Boolean)}
+            columns={columns}
             dataSource={data}
             pagination={false}
             scroll={{ x: "max-content" }}
             rowKey="key"
             bordered
-            render={() => (
-              <>
-                <Table.Row>
-                  <Table.Cell
-                    colSpan={orderType === "sale" ? 6 : 10}
-                    className="text-right"
-                  >
-                    <strong>المجموع الكلي:</strong>
-                  </Table.Cell>
-                  <Table.Cell colSpan={orderType === "sale" ? 2 : 4}>
-                    <span className="text-lg font-bold">
-                      {grandTotal.toFixed(2)} {getCurrencySymbol()}
-                    </span>
-                  </Table.Cell>
-                </Table.Row>
-                <Table.Row>
-                  <Table.Cell colSpan={8} className="text-right">
-                    <strong>إضافة صف جديد:</strong>
-                  </Table.Cell>
-                </Table.Row>
-              </>
-            )}
             summary={() => (
               <Table.Summary fixed="bottom">
                 <Table.Summary.Row>
                   <Table.Summary.Cell
                     index={0}
-                    colSpan={orderType === "sale" ? 6 : 7}
+                    colSpan={6}
                     className="text-right"
                   >
                     <strong>المجموع الكلي:</strong>
@@ -491,7 +456,9 @@ export const OnSite = () => {
         <div className="flex justify-end gap-4 mt-4">
           <Button type="default">إلغاء</Button>
           <Button type="primary" htmlType="submit">
-            حفظ القائمة
+            {operationType === "sale"
+              ? "حفظ فاتورة البيع"
+              : "حفظ فاتورة الإرجاع"}
           </Button>
         </div>
       </Form>

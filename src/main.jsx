@@ -18,7 +18,11 @@ import { BannerPage } from "./pages/bannersPage/banners.jsx";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { OnSite } from "./pages/onSite/onSite.jsx";
 import { OrderPage } from "./pages/orderPage/order.jsx";
+import { CreateOrderPage } from "./pages/orderPage/createOrder.jsx";
 import { OrderTracking } from "./pages/orderTracking/orderTracking.jsx";
+
+import { Purchasing } from "./pages/purchasing/purchasing.jsx";
+import { Sales } from "./pages/sales/sales.jsx";
 
 const queryClient = new QueryClient();
 
@@ -60,12 +64,24 @@ const router = createBrowserRouter([
         element: <OrderPage />,
       },
       {
+        path: "/create-order",
+        element: <CreateOrderPage />,
+      },
+      {
         path: "/onSite",
         element: <OnSite />,
       },
       {
         path: "/orderTracking/:id",
         element: <OrderTracking />,
+      },
+      {
+        path: "/purchasing",
+        element: <Purchasing />,
+      },
+      {
+        path: "/sales",
+        element: <Sales />,
       },
     ],
   },

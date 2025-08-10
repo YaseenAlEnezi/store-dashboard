@@ -226,7 +226,7 @@ export const ModalForm = ({
           </Col>
           <Col span={8}>
             <Form.Item
-              name="SellingPrice"
+              name="generalPrice"
               label="سعر البيع"
               rules={[{ required: true, message: "ادخل سعر المنتج" }]}
             >
@@ -242,6 +242,21 @@ export const ModalForm = ({
               <InputNumber className="w-full" />
             </Form.Item>
           </Col>
+          <Col span={8}>
+            <Form.Item name="bulkPrice" label="سعر الجملة">
+              <InputNumber className="w-full" />
+            </Form.Item>
+          </Col>
+          <Col span={8}>
+            <Form.Item name="specialPrice" label="سعر خاص">
+              <InputNumber className="w-full" />
+            </Form.Item>
+          </Col>
+          <Col span={8}>
+            <Form.Item name="barcode" label="الباركود">
+              <Input />
+            </Form.Item>
+          </Col>
           <Col span={12}>
             <Form.Item name="category" label="قسم المنتج">
               <Select options={categories} />
@@ -250,11 +265,6 @@ export const ModalForm = ({
           <Col span={12}>
             <Form.Item name="brand" label="ماركة المنتج">
               <Select options={brands} />
-            </Form.Item>
-          </Col>
-          <Col span={12}>
-            <Form.Item name="barcode" label="الباركود">
-              <Input />
             </Form.Item>
           </Col>
           <Col span={12}>

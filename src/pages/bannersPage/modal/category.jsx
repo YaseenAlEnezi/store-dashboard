@@ -13,6 +13,7 @@ import {
 import { useEffect, useState } from "react";
 import { showNotification } from "../../../utils/Notification";
 import { fetcher, IMAGE_URL, URL } from "../../../utils/api";
+import { safeJsonParse } from "../../../utils/jsonParser";
 import { IoIosClose } from "react-icons/io";
 
 export const Category = ({
@@ -30,7 +31,9 @@ export const Category = ({
 
   useEffect(() => {
     if (record) {
-      setSelectedCategoryID(record.categoryIDs);
+      // Parse categoryIDs JSON string to array using utility function
+      const categoryIDsArray = safeJsonParse(record.categoryIDs, []);
+      setSelectedCategoryID(categoryIDsArray);
       setPreviewImage(`${IMAGE_URL + record.img}`);
       setImage(record.img);
       form.setFieldsValue({

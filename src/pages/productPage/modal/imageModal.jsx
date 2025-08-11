@@ -112,7 +112,7 @@ export const ImagesModal = ({
           marginTop: "16px",
         }}
       >
-        {images.map((img) => (
+        {/* {images?.length > 0 && images?.map((img) => (
           <div key={img} className="relative">
             <img
               src={`${IMAGE_URL}${img}`}
@@ -130,7 +130,7 @@ export const ImagesModal = ({
               onClick={() => handleRemove(img)}
             />
           </div>
-        ))}
+        ))} */}
         <Upload.Dragger
           listType="text"
           action={`${URL}upload`}

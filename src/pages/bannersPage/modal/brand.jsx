@@ -13,6 +13,7 @@ import {
 import { useEffect, useState } from "react";
 import { showNotification } from "../../../utils/Notification";
 import { fetcher, IMAGE_URL, URL } from "../../../utils/api";
+import { safeJsonParse } from "../../../utils/jsonParser";
 import { IoIosClose } from "react-icons/io";
 
 export const Brand = ({
@@ -30,7 +31,9 @@ export const Brand = ({
 
   useEffect(() => {
     if (record) {
-      setSelectedBrandIDs(record.brandIDs);
+      // Parse brandIDs JSON string to array using utility function
+      const brandIDsArray = safeJsonParse(record.brandIDs, []);
+      setSelectedBrandIDs(brandIDsArray);
       setPreviewImage(`${IMAGE_URL + record.img}`);
       setImage(record.img);
       form.setFieldsValue({

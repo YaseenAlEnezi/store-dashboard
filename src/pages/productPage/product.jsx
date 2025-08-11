@@ -13,6 +13,7 @@ import {
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { showNotification } from "../../utils/Notification";
 import { fetcher, IMAGE_URL } from "../../utils/api";
+import { safeJsonParse } from "../../utils/jsonParser";
 import { ModalForm } from "./modal/modal";
 import { TransactionHistoryModal } from "./modal/transactionHistory";
 import { FaRegEdit } from "react-icons/fa";
@@ -98,14 +99,18 @@ export const ProductPage = () => {
       title: "ألاسم",
       dataIndex: "name",
       key: "name",
-      render: (text) => <Typography.Text strong>{text}</Typography.Text>,
+      width: 150,
+      render: (text) => <Typography.Text strong >{text}</Typography.Text>,
     },
     {
       title: "الوصف",
       dataIndex: "shortDescription",
       key: "shortDescription",
+      width: 100,
       render: (text) => (
-        <Typography.Text className="text-gray-500">{text}</Typography.Text>
+        <Typography.Text className="text-gray-500 text-nowrap">
+          {text?.slice(0, 20)}...
+        </Typography.Text>
       ),
     },
     {
@@ -122,6 +127,7 @@ export const ProductPage = () => {
       title: "الشراء",
       dataIndex: "buyingPrice",
       key: "buyingPrice",
+      width: 120,
       render: (text) => (
         <Typography.Text className="text-gray-700" strong>
           {text?.toLocaleString("en")} د.ع
@@ -132,26 +138,28 @@ export const ProductPage = () => {
       title: "البيع",
       dataIndex: "generalPrice",
       key: "generalPrice",
+      width: 120,
       render: (text) => (
         <Typography.Text className="text-gray-700" strong>
           {text?.toLocaleString("en")} د.ع
         </Typography.Text>
       ),
     },
-    {
-      title: "متوسط التكلفة",
-      dataIndex: "averageCost",
-      key: "averageCost",
-      render: (text) => (
-        <Typography.Text className="text-green-600" strong>
-          {text?.toLocaleString("en")} د.ع
-        </Typography.Text>
-      ),
-    },
+    // {
+    //   title: "متوسط التكلفة",
+    //   dataIndex: "averageCost",
+    //   key: "averageCost",
+    //   render: (text) => (
+    //     <Typography.Text className="text-green-600" strong>
+    //       {text?.toLocaleString("en")} د.ع
+    //     </Typography.Text>
+    //   ),
+    // },
     {
       title: "آخر شراء",
       dataIndex: "lastPurchaseDate",
       key: "lastPurchaseDate",
+      width: 100,
       render: (text) => (
         <Typography.Text className="text-gray-500">
           {text ? new Date(text).toLocaleDateString("ar-EG") : "غير محدد"}
@@ -162,28 +170,34 @@ export const ProductPage = () => {
       title: "الصور",
       dataIndex: "images",
       key: "images",
-      render: (_, record) => (
-        <div className="grid grid-cols-9 w-full max-w-[250px]">
-          {record?.images?.map((image, index) => (
+      width: 250,
+      render: (_, record) => {
+        // Parse images JSON string to array using utility function
+        const imagesArray = safeJsonParse(record?.images, []);
+
+        return (
+          <div className="grid grid-cols-9 w-full max-w-[250px]">
+            {imagesArray.map((image, index) => (
+              <Avatar
+                key={index}
+                src={IMAGE_URL + image}
+                size="small"
+                className="w-6 h-6 object-cover my-1 border border-gray-200 cursor-pointer rounded"
+              />
+            ))}
             <Avatar
-              key={index}
-              src={IMAGE_URL + image}
               size="small"
-              className="w-6 h-6 object-cover my-1 border border-gray-200 cursor-pointer rounded"
-            />
-          ))}
-          <Avatar
-            size="small"
-            onClick={() => {
-              setShowModalImages(true);
-              setRecord(record);
-            }}
-            className="w-6 h-6 object-cover my-1 rounded cursor-pointer"
-          >
-            <AiOutlinePlus className="text-lg" />
-          </Avatar>
-        </div>
-      ),
+              onClick={() => {
+                setShowModalImages(true);
+                setRecord(record);
+              }}
+              className="w-6 h-6 object-cover my-1 rounded cursor-pointer"
+            >
+              <AiOutlinePlus className="text-lg" />
+            </Avatar>
+          </div>
+        );
+      },
     },
     {
       title: "تعديل",

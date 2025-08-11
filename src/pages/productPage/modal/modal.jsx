@@ -14,6 +14,7 @@ import {
 } from "antd";
 import React, { useEffect, useState } from "react";
 import { fetcher, IMAGE_URL, imageUpload, URL } from "../../../utils/api";
+import { safeJsonParse } from "../../../utils/jsonParser";
 import { showNotification } from "../../../utils/Notification";
 import { RiCloseLine, RiImageAddLine } from "react-icons/ri";
 import { useMutation } from "@tanstack/react-query";
@@ -123,7 +124,9 @@ export const ModalForm = ({
         category: record.category?.id || record.categoryID || null,
         brand: record.brand?.id || record.brandID || null,
       });
-      setKeywords(record.keywords || []);
+      // Parse keywords JSON string to array using utility function
+      const keywordsArray = safeJsonParse(record.keywords, []);
+      setKeywords(keywordsArray);
       setImage(record.thumbnail);
     }
   }, [record]);

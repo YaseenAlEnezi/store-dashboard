@@ -111,8 +111,12 @@ export const Sales = () => {
   };
 
   const deleteRow = (key) => {
-    if (data.length === 1) {
+    if (data.length === 1 && !data[0].name) {
       message.info("يجب أن يكون هناك صف واحد على الأقل");
+      return;
+    } else if (data.length === 1 && data[0].name) {
+      setData((prev) => prev.filter((item) => item.key !== key));
+      addEmptyRow();
       return;
     }
     setData((prev) => prev.filter((item) => item.key !== key));
@@ -124,16 +128,16 @@ export const Sales = () => {
     setData((prevData) =>
       prevData.map((item) => {
         if (item.key === recordKey) {
-          const sellingPrice =
-            productData.SellingPrice || productData.price || 0;
+          const generalPrice =
+            productData.generalPrice || productData.price || 0;
           return {
             ...item,
             id: productData.id,
             name: productData.name,
             barcode: productData.barcode || "",
-            price: sellingPrice,
+            price: generalPrice,
             location: productData.location || "",
-            total: (item.quantity || 1) * sellingPrice,
+            total: (item.quantity || 1) * generalPrice,
           };
         }
         return item;
@@ -175,29 +179,23 @@ export const Sales = () => {
     const notes = form.getFieldValue("notes");
 
     const payload = {
-      customer: {
+      items: data.map((item) => ({
+        id: item.id,
+        quantity: parseInt(item.quantity),
+        cost: parseInt(item.price),
+      })),
+      address: address,
+      user: {
         name: customerName,
         phone: customerPhone,
       },
-      items: data.map((item) => ({
-        id: item.id,
-        barcode: item.barcode,
-        name: item.name,
-        quantity: parseInt(item.quantity),
-        price: parseInt(item.price),
-        location: item.location,
-      })),
-      address: address,
-      notes: notes,
-      operationType: operationType,
-      currency: currency,
+      totalCost: grandTotal,
     };
 
     console.log(payload);
 
     try {
-      const endpoint =
-        operationType === "sale" ? "create-sale" : "create-sale-return";
+      const endpoint = operationType === "sale" ? "sales" : "salesReturn";
       const res = await fetcher({
         pathname: endpoint,
         method: "POST",
@@ -224,9 +222,10 @@ export const Sales = () => {
         ]);
         refetch();
       } else {
-        message.error("فشل في إنشاء الفاتورة");
+        message.error(res.msg || "فشل في إنشاء الفاتورة");
       }
     } catch (error) {
+      console.error("Error creating order:", error);
       message.error("فشل في إنشاء الفاتورة");
     }
   };
@@ -247,6 +246,7 @@ export const Sales = () => {
       render: (text, record) => (
         <Select
           showSearch
+          size="small"
           value={record.name || undefined}
           options={productOptions.filter(
             (option) =>
@@ -286,6 +286,7 @@ export const Sales = () => {
       width: 100,
       render: (text, record) => (
         <Input
+          size="small"
           type="number"
           min={1}
           value={record.quantity}
@@ -310,6 +311,7 @@ export const Sales = () => {
       width: 120,
       render: (text, record) => (
         <Input
+          size="small"
           type="number"
           min={0}
           value={record.price}
@@ -343,6 +345,13 @@ export const Sales = () => {
           danger
           icon={<DeleteOutlined />}
           onClick={() => deleteRow(record.key)}
+          onKeyDown={(e) => {
+            if (e.key === "Tab" && !record.name) {
+              addEmptyRow();
+            } else {
+              e.preventDefault();
+            }
+          }}
           size="small"
         />
       ),
@@ -351,34 +360,34 @@ export const Sales = () => {
 
   return (
     <Container width="100%">
-      <div className="mb-4">
-        <h1 className="text-3xl font-bold mb-4">إدارة المبيعات</h1>
-      </div>
-
-      <div className="flex justify-end gap-4 mt-4">
-        <Button type="primary" onClick={() => changeTab("sale")}>
-          فاتورة بيع
-        </Button>
-        <Button type="primary" onClick={() => changeTab("return")}>
-          فاتورة إرجاع
-        </Button>
-      </div>
-
-      <div className="mb-4 mt-4 flex flex-wrap justify-between items-center">
-        <h2 className="text-2xl font-bold">
+      <div className="mb-4 flex justify-between items-center">
+        <h1 className="text-3xl font-bold">
+          {" "}
           {operationType === "sale" ? "فاتورة بيع جديدة" : "فاتورة إرجاع بيع"}
-        </h2>
-        <div className="flex justify-end items-center gap-4 mt-2 sm:mt-0">
-          <div className="flex flex-col items-start">
-            <label className="text-sm text-gray-600 mb-1">العملة</label>
-            <Select
-              value={currency}
-              className="w-[200px]"
-              size="large"
-              options={currencyOptions}
-              onChange={(value) => setCurrency(value)}
-            />
-          </div>
+        </h1>
+
+        <div className="flex items-center border border-gray-300 rounded-xl">
+          <button
+            className="px-4 py-2 rounded-r-xl"
+            onClick={() => changeTab("sale")}
+            style={{
+              backgroundColor: operationType === "sale" ? "#FFED03" : "#FAFAFA",
+              opacity: operationType === "sale" ? 1 : 0.5,
+            }}
+          >
+            فاتورة مبيعات
+          </button>
+          <button
+            className=" px-4 py-2 rounded-l-xl"
+            onClick={() => changeTab("saleReturn")}
+            style={{
+              backgroundColor:
+                operationType === "saleReturn" ? "#FFED03" : "#FAFAFA",
+              opacity: operationType === "saleReturn" ? 1 : 0.5,
+            }}
+          >
+            إرجاع مبيعات
+          </button>
         </div>
       </div>
 
@@ -414,6 +423,18 @@ export const Sales = () => {
                 placeholder={
                   operationType === "sale" ? "ملاحظات إضافية" : "سبب الإرجاع"
                 }
+              />
+            </Form.Item>
+          </Col>
+        </Row>
+        <Row gutter={[16, 16]}>
+          <Col xs={24} sm={12} md={6}>
+            <Form.Item label="العملة" name="currency">
+              <Select
+                value={currency}
+                onChange={(value) => setCurrency(value)}
+                options={currencyOptions}
+                defaultValue={currency}
               />
             </Form.Item>
           </Col>

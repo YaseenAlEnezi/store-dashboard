@@ -22,11 +22,11 @@ export default function Navbar() {
   const currentRoute = window.location.pathname;
 
   const navItems = [
-    {
-      name: "ألفواتير",
-      href: "/onSite",
-      current: true,
-    },
+    // {
+    //   name: "ألفواتير",
+    //   href: "/onSite",
+    //   current: true,
+    // },
     {
       name: "المشتريات",
       href: "/purchasing",
@@ -38,7 +38,7 @@ export default function Navbar() {
       current: true,
     },
     {
-      name: "الطلبات",
+      name: "الفواتير",
       href: "/order",
       current: true,
     },

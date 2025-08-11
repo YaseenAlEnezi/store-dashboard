@@ -13,6 +13,7 @@ import {
 import { useEffect, useState } from "react";
 import { showNotification } from "../../../utils/Notification";
 import { fetcher, IMAGE_URL, URL } from "../../../utils/api";
+import { safeJsonParse } from "../../../utils/jsonParser";
 import { IoIosClose } from "react-icons/io";
 
 export const TwoSides = ({
@@ -30,7 +31,9 @@ export const TwoSides = ({
 
   useEffect(() => {
     if (record) {
-      setSelectedBannerID(record.bannerIDs);
+      // Parse bannerIDs JSON string to array using utility function
+      const bannerIDsArray = safeJsonParse(record.bannerIDs, []);
+      setSelectedBannerID(bannerIDsArray);
       setPreviewImage(`${IMAGE_URL + record.img}`);
       setImage(record.img);
       form.setFieldsValue({

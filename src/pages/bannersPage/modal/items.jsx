@@ -11,6 +11,7 @@ import {
 import { useEffect, useState } from "react";
 import { showNotification } from "../../../utils/Notification";
 import { fetcher, IMAGE_URL, URL } from "../../../utils/api";
+import { safeJsonParse } from "../../../utils/jsonParser";
 import { IoIosClose } from "react-icons/io";
 import { Image } from "lucide-react";
 
@@ -31,7 +32,9 @@ export const Items = ({
 
   useEffect(() => {
     if (record) {
-      setSelectedItemsIDs(record.productIDs || []);
+      // Parse productIDs JSON string to array using utility function
+      const productIDsArray = safeJsonParse(record.productIDs, []);
+      setSelectedItemsIDs(productIDsArray);
       setSelectedProducts(record.products || []);
       setPreviewImage(
         record.img ? `${IMAGE_URL + record.img}` : "/fallback.jpg"

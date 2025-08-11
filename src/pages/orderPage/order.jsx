@@ -1,264 +1,459 @@
-import React, { useEffect, useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Container } from "../../components/Container";
 import {
   Button,
   Table,
-  Input,
-  Popconfirm,
-  Typography,
-  Pagination,
   Tag,
+  Space,
+  Input,
+  Select,
+  DatePicker,
+  Row,
+  Col,
+  message,
+  Modal,
+  Descriptions,
+  Badge,
 } from "antd";
-import { showNotification } from "../../utils/Notification";
+import { SearchOutlined, EyeOutlined, DeleteOutlined } from "@ant-design/icons";
+import { useQuery } from "@tanstack/react-query";
 import { fetcher } from "../../utils/api";
-import { IoSearchOutline } from "react-icons/io5";
-import { IoIosArrowBack, IoIosArrowForward } from "react-icons/io";
-import { MdFindInPage } from "react-icons/md";
+import dayjs from "dayjs";
+import { EditOutlined } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
-export const OrderPage = () => {
-  const [order, setOrder] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [total, setTotal] = useState(0);
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
+
+const { RangePicker } = DatePicker;
+
+export const Order = () => {
   const [search, setSearch] = useState("");
+  const [orderTypeFilter, setOrderTypeFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [dateRange, setDateRange] = useState(null);
+  const [selectedOrder, setSelectedOrder] = useState(null);
+  const [isModalVisible, setIsModalVisible] = useState(false);
   const Navigate = useNavigate();
 
-  const itemRender = (_, type, originalElement) => {
-    if (type === "prev") {
-      return (
-        <div className="flex w-full h-full items-center justify-center">
-          <IoIosArrowForward className="text-2xl" />
-        </div>
-      );
-    }
-    if (type === "next") {
-      return (
-        <div className="flex w-full h-full items-center justify-center">
-          <IoIosArrowBack className="text-2xl" />
-        </div>
-      );
-    }
-    return originalElement;
-  };
-
-  const getOrder = async () => {
-    setLoading(true);
-    try {
-      const response = await fetcher({
-        pathname: `order?page=${page}&pageSize=${pageSize}&search=${search}`,
-        method: "GET",
-        data: null,
-        auth: true,
-      });
-      if (response.success) {
-        setOrder(response.data);
-        setTotal(response.total);
+  const {
+    data: ordersResponse,
+    isLoading,
+    refetch,
+  } = useQuery({
+    queryKey: ["orders"],
+    queryFn: async () => {
+      try {
+        const res = await fetcher({
+          pathname: "order",
+          method: "GET",
+          auth: true,
+        });
+        if (!res.success) throw new Error("Failed to fetch orders");
+        return res;
+      } catch (error) {
+        message.error("فشل في جلب الطلبات");
+        return { data: [] };
       }
-      setLoading(false);
-    } catch (error) {
-      setLoading(false);
-      showNotification("error", "Failed to fetch order", "");
-      console.log(error);
+    },
+  });
+
+  const orders = ordersResponse?.data || [];
+
+  // Filter orders based on current filters
+  const filteredOrders = orders.filter((order) => {
+    const matchesSearch =
+      order.id?.toString().includes(search) ||
+      order.user?.name?.toLowerCase().includes(search.toLowerCase()) ||
+      order.user?.phone?.includes(search) ||
+      order.supplierName?.toLowerCase().includes(search.toLowerCase()) ||
+      order.supplierPhone?.includes(search);
+
+    const matchesOrderType =
+      orderTypeFilter === "all" || order.orderType === orderTypeFilter;
+    const matchesStatus =
+      statusFilter === "all" || order.status === statusFilter;
+
+    let matchesDate = true;
+    if (dateRange && dateRange[0] && dateRange[1]) {
+      const orderDate = dayjs(order.createdAt);
+      matchesDate =
+        orderDate.isAfter(dateRange[0]) && orderDate.isBefore(dateRange[1]);
     }
+
+    return matchesSearch && matchesOrderType && matchesStatus && matchesDate;
+  });
+
+  const getOrderTypeColor = (orderType) => {
+    const colors = {
+      sale: "green",
+      saleReturn: "orange",
+      purchase: "blue",
+      purchaseReturn: "red",
+      online: "purple",
+    };
+    return colors[orderType] || "default";
   };
 
-  const deleteOrder = async (id) => {
-    try {
-      const response = await fetcher({
-        pathname: `order/${id}`,
-        method: "DELETE",
-        data: null,
-        auth: true,
-      });
-      getOrder();
-    } catch (error) {
-      console.log(error);
-    }
+  const getOrderTypeLabel = (orderType) => {
+    const labels = {
+      sale: "بيع",
+      saleReturn: "إرجاع بيع",
+      purchase: "شراء",
+      purchaseReturn: "إرجاع شراء",
+      online: "طلب إلكتروني",
+    };
+    return labels[orderType] || orderType;
   };
 
-  useEffect(() => {
-    getOrder();
-  }, [page, pageSize, search]);
+  const getStatusColor = (status) => {
+    const colors = {
+      created: "default",
+      accepted: "processing",
+      shipping: "warning",
+      delivered: "success",
+      cancelled: "error",
+    };
+    return colors[status] || "default";
+  };
+
+  const getStatusLabel = (status) => {
+    const labels = {
+      created: "تم الإنشاء",
+      accepted: "قيد التجهيز",
+      shipping: "قيد الشحن",
+      delivered: "تم التسليم",
+      cancelled: "ملغي",
+    };
+    return labels[status] || status;
+  };
+
+  const showOrderDetails = (order) => {
+    setSelectedOrder(order);
+    setIsModalVisible(true);
+  };
+
+  const handleDeleteOrder = async (orderId) => {
+    Modal.confirm({
+      title: "تأكيد الحذف",
+      content: "هل أنت متأكد من حذف هذا الطلب؟",
+      okText: "نعم",
+      cancelText: "لا",
+      onOk: async () => {
+        try {
+          const res = await fetcher({
+            pathname: `order/${orderId}`,
+            method: "DELETE",
+            auth: true,
+          });
+          if (res.success) {
+            message.success("تم حذف الطلب بنجاح");
+            refetch();
+          } else {
+            message.error(res.msg || "فشل في حذف الطلب");
+          }
+        } catch (error) {
+          message.error("فشل في حذف الطلب");
+        }
+      },
+    });
+  };
 
   const columns = [
     {
-      title: "ت.",
+      title: "رقم الطلب",
       dataIndex: "id",
       key: "id",
-      render: (text, record) => <div className="">{text}</div>,
+      width: 100,
+      render: (id) => `#${id}`,
     },
     {
       title: "نوع الطلب",
       dataIndex: "orderType",
       key: "orderType",
-      render: (text, record) => (
-        <Tag
-          className="text-[14px] font-semibold"
-          color={record.orderType === "purchase" ? "orange" : "green"}
-        >
-          {record.orderType === "purchase" ? "شراء" : "بيع"}
+      width: 120,
+      render: (orderType) => (
+        <Tag color={getOrderTypeColor(orderType)}>
+          {getOrderTypeLabel(orderType)}
         </Tag>
       ),
-    },
-    {
-      title: "المورد/الزبون",
-      dataIndex: "user",
-      key: "user",
-      render: (text, record) => {
-        if (record.orderType === "purchase") {
-          return (
-            <div className="flex flex-col items-start gap-2">
-              <Typography.Text strong>
-                {record.supplierName || "غير محدد"}
-              </Typography.Text>
-              <Typography.Text>
-                {record.supplierPhone || "غير محدد"}
-              </Typography.Text>
-            </div>
-          );
-        } else {
-          return (
-            <div className="flex flex-col items-start gap-2">
-              <Typography.Text strong>
-                {record.user?.name || "غير محدد"}
-              </Typography.Text>
-              <Typography.Text>{record.address || "غير محدد"}</Typography.Text>
-            </div>
-          );
-        }
-      },
-    },
-    {
-      title: "التواصل",
-      dataIndex: "phone",
-      key: "phone",
-      render: (text, record) => {
-        if (record.orderType === "purchase") {
-          return (
-            <Typography.Text className="text-[14px] font-semibold">
-              {record.supplierPhone || "غير محدد"}
-            </Typography.Text>
-          );
-        } else {
-          return (
-            <Typography.Text className="text-[14px] font-semibold">
-              {record.user?.phone || "غير محدد"}
-            </Typography.Text>
-          );
-        }
-      },
-    },
-    {
-      title: "التكلفة",
-      dataIndex: "totalCost",
-      key: "totalCost",
-      render: (text, record) => {
-        if (record.orderType === "purchase") {
-          return (
-            <Typography.Text className="text-[14px] font-semibold text-green-600">
-              {record.totalCost ? `${record.totalCost} د.ع` : "غير محدد"}
-            </Typography.Text>
-          );
-        } else {
-          return (
-            <Typography.Text className="text-[14px] font-semibold text-blue-600">
-              {record.dollarPrice ? `${record.dollarPrice} $` : "غير محدد"}
-            </Typography.Text>
-          );
-        }
-      },
     },
     {
       title: "الحالة",
       dataIndex: "status",
       key: "status",
-      render: (text, record) => (
-        <Tag
-          className="text-[14px] font-semibold"
-          color={
-            record.status === "created"
-              ? "orange"
-              : record.status === "accepted"
-              ? "green"
-              : record.status === "shipping"
-              ? "blue"
-              : record.status === "delivered"
-              ? "purple"
-              : record.status === "cancelled"
-              ? "volcano"
-              : "red"
-          }
-        >
-          {record.status === "created"
-            ? "تم إنشاؤه"
-            : record.status === "accepted"
-            ? "مقبول"
-            : record.status === "shipping"
-            ? "قيد الشحن"
-            : record.status === "delivered"
-            ? "تم التسليم"
-            : record.status === "cancelled"
-            ? "ملغي"
-            : record.status}
-        </Tag>
+      width: 120,
+      render: (status) => (
+        <Badge status={getStatusColor(status)} text={getStatusLabel(status)} />
       ),
     },
     {
-      title: "تعديل",
-      dataIndex: "edit",
-      key: "edit",
-      render: (text, record) => (
-        <div className="flex items-center gap-2">
-          <MdFindInPage
+      title: "العميل/المورد",
+      key: "customerSupplier",
+      width: 200,
+      render: (_, record) => {
+        if (record.orderType === "sale" || record.orderType === "saleReturn") {
+          return (
+            <div>
+              <div className="font-medium">
+                {record.user?.name || "غير محدد"}
+              </div>
+              <div className="text-sm text-gray-500">
+                {record.user?.phone || ""}
+              </div>
+            </div>
+          );
+        } else {
+          return (
+            <div>
+              <div className="font-medium">
+                {record.supplierName || "غير محدد"}
+              </div>
+              <div className="text-sm text-gray-500">
+                {record.supplierPhone || ""}
+              </div>
+            </div>
+          );
+        }
+      },
+    },
+    {
+      title: "العنوان",
+      dataIndex: "address",
+      key: "address",
+      width: 200,
+      render: (address) => address || "غير محدد",
+    },
+    {
+      title: "التكلفة الإجمالية",
+      dataIndex: "totalCost",
+      key: "totalCost",
+      width: 120,
+      render: (totalCost) => (
+        <span className="font-medium">
+          {totalCost ? `${totalCost.toLocaleString()} د.ع` : "غير محدد"}
+        </span>
+      ),
+    },
+    {
+      title: "تاريخ الإنشاء",
+      dataIndex: "createdAt",
+      key: "createdAt",
+      width: 150,
+      render: (date) => dayjs(date).format("DD/MM/YYYY HH:mm"),
+    },
+    {
+      title: "الإجراءات",
+      key: "actions",
+      width: 120,
+      render: (_, record) => (
+        <Space>
+          <Button
+            type="primary"
+            icon={<EyeOutlined />}
+            size="small"
+            onClick={() => showOrderDetails(record)}
+          >
+            عرض
+          </Button>
+
+          <Button
+            type="primary"
+            icon={<EditOutlined />}
+            size="small"
             onClick={() => {
               Navigate(`/orderTracking/${record.id}`);
             }}
-            className="text-xl cursor-pointer"
-          />
-        </div>
+          >
+            تعديل
+          </Button>
+
+          <Button
+            danger
+            icon={<DeleteOutlined />}
+            size="small"
+            onClick={() => handleDeleteOrder(record.id)}
+          >
+            حذف
+          </Button>
+        </Space>
       ),
     },
   ];
 
   return (
-    <div>
-      <Container>
-        <div className="mb-4 flex justify-between">
-          <h1 className="text-3xl font-bold">الطلبات</h1>
-          <div className="flex justify-end items-end w-1/4 gap-4">
-            <Button
-              type="primary"
-              onClick={() => Navigate("/create-order")}
-              className="bg-blue-500"
-            >
-              إنشاء طلب جديد
-            </Button>
+    <Container width="100%">
+      <div className="mb-6">
+        <h1 className="text-3xl font-bold mb-4">إدارة الطلبات</h1>
+        <p className="text-gray-600">عرض وإدارة جميع أنواع الطلبات</p>
+      </div>
+
+      {/* Filters */}
+      <div className="bg-white p-4 rounded-lg shadow-sm mb-6">
+        <Row gutter={[16, 16]}>
+          <Col xs={24} sm={12} md={6}>
             <Input
-              placeholder="بحث عن مستخدم"
-              type="text"
-              prefix={<IoSearchOutline className="text-xl" />}
+              placeholder="البحث في الطلبات..."
+              prefix={<SearchOutlined />}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
-          </div>
-        </div>
+          </Col>
+          <Col xs={24} sm={12} md={4}>
+            <Select
+              placeholder="نوع الطلب"
+              value={orderTypeFilter}
+              onChange={setOrderTypeFilter}
+              style={{ width: "100%" }}
+              options={[
+                { value: "all", label: "جميع الأنواع" },
+                { value: "sale", label: "بيع" },
+                { value: "saleReturn", label: "إرجاع بيع" },
+                { value: "purchase", label: "شراء" },
+                { value: "purchaseReturn", label: "إرجاع شراء" },
+                { value: "online", label: "طلب إلكتروني" },
+              ]}
+            />
+          </Col>
+          <Col xs={24} sm={12} md={4}>
+            <Select
+              placeholder="الحالة"
+              value={statusFilter}
+              onChange={setStatusFilter}
+              style={{ width: "100%" }}
+              options={[
+                { value: "all", label: "جميع الحالات" },
+                { value: "created", label: "تم الإنشاء" },
+                { value: "accepted", label: "تم القبول" },
+                { value: "shipping", label: "قيد الشحن" },
+                { value: "delivered", label: "تم التسليم" },
+                { value: "cancelled", label: "ملغي" },
+              ]}
+            />
+          </Col>
+          <Col xs={24} sm={12} md={6}>
+            <RangePicker
+              placeholder={["من تاريخ", "إلى تاريخ"]}
+              value={dateRange}
+              onChange={setDateRange}
+              style={{ width: "100%" }}
+            />
+          </Col>
+          <Col xs={24} sm={12} md={4}>
+            <Button
+              onClick={() => {
+                setSearch("");
+                setOrderTypeFilter("all");
+                setStatusFilter("all");
+                setDateRange(null);
+              }}
+              style={{ width: "100%" }}
+            >
+              إعادة تعيين
+            </Button>
+          </Col>
+        </Row>
+      </div>
+
+      {/* Orders Table */}
+      <div className="bg-white rounded-lg shadow-sm">
         <Table
-          className="mt-4"
           columns={columns}
-          dataSource={order}
-          loading={loading}
-          pagination={false}
+          dataSource={filteredOrders}
+          loading={isLoading}
+          pagination={{
+            pageSize: 10,
+            showSizeChanger: true,
+            showQuickJumper: true,
+            showTotal: (total, range) =>
+              `${range[0]}-${range[1]} من ${total} طلب`,
+          }}
+          rowKey="id"
+          scroll={{ x: 1200 }}
         />
-        <Pagination
-          defaultCurrent={1}
-          total={total}
-          onChange={(e) => setPage(e)}
-          showSizeChanger={false}
-          itemRender={itemRender}
-          className="mt-4"
-        />
-      </Container>
-    </div>
+      </div>
+
+      {/* Order Details Modal */}
+      <Modal
+        title="تفاصيل الطلب"
+        open={isModalVisible}
+        onCancel={() => setIsModalVisible(false)}
+        footer={[
+          <Button key="close" onClick={() => setIsModalVisible(false)}>
+            إغلاق
+          </Button>,
+        ]}
+        width={800}
+      >
+        {selectedOrder && (
+          <Descriptions bordered column={2}>
+            <Descriptions.Item label="رقم الطلب" span={2}>
+              #{selectedOrder.id}
+            </Descriptions.Item>
+            <Descriptions.Item label="نوع الطلب">
+              <Tag color={getOrderTypeColor(selectedOrder.orderType)}>
+                {getOrderTypeLabel(selectedOrder.orderType)}
+              </Tag>
+            </Descriptions.Item>
+            <Descriptions.Item label="الحالة">
+              <Badge
+                status={getStatusColor(selectedOrder.status)}
+                text={getStatusLabel(selectedOrder.status)}
+              />
+            </Descriptions.Item>
+            <Descriptions.Item label="التكلفة الإجمالية" span={2}>
+              {selectedOrder.totalCost
+                ? `${selectedOrder.totalCost.toLocaleString()} دينار عراقي`
+                : "غير محدد"}
+            </Descriptions.Item>
+            <Descriptions.Item label="العنوان" span={2}>
+              {selectedOrder.address || "غير محدد"}
+            </Descriptions.Item>
+            <Descriptions.Item label="تاريخ الإنشاء" span={2}>
+              {dayjs(selectedOrder.createdAt).format("DD/MM/YYYY HH:mm:ss")}
+            </Descriptions.Item>
+
+            {selectedOrder.user && (
+              <>
+                <Descriptions.Item label="اسم العميل">
+                  {selectedOrder.user.name}
+                </Descriptions.Item>
+                <Descriptions.Item label="رقم الهاتف">
+                  {selectedOrder.user.phone}
+                </Descriptions.Item>
+              </>
+            )}
+
+            {selectedOrder.supplierName && (
+              <>
+                <Descriptions.Item label="اسم المورد">
+                  {selectedOrder.supplierName}
+                </Descriptions.Item>
+                <Descriptions.Item label="رقم هاتف المورد">
+                  {selectedOrder.supplierPhone || "غير محدد"}
+                </Descriptions.Item>
+              </>
+            )}
+
+            <Descriptions.Item label="المنتجات" span={2}>
+              <div className="max-h-40 overflow-y-auto">
+                {Array.isArray(selectedOrder.items) ? (
+                  selectedOrder.items.map((item, index) => (
+                    <div key={index} className="border-b py-2">
+                      <div className="font-medium">
+                        {item.product?.name || `منتج ${index + 1}`}
+                      </div>
+                      <div className="text-sm text-gray-500">
+                        الكمية: {item.quantity} | السعر:{" "}
+                        {item.cost || item.price || "غير محدد"} د.ع
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <span className="text-gray-500">لا توجد تفاصيل للمنتجات</span>
+                )}
+              </div>
+            </Descriptions.Item>
+          </Descriptions>
+        )}
+      </Modal>
+    </Container>
   );
 };

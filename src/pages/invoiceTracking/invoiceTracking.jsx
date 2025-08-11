@@ -3,9 +3,7 @@ import {
   Clock,
   User,
   Phone,
-  MapPin,
   Package,
-  Truck,
   CheckCircle,
   XCircle,
   ShoppingBag,
@@ -13,16 +11,16 @@ import {
   Save,
   CreditCard,
   Trash2,
+  FileText,
 } from "lucide-react";
-import { Button, Card, Input, Popconfirm, Select, Table } from "antd";
-import StatusDropdown from "./StatusDropdown";
+import { Button, Card, Input, Popconfirm, Select, Table, Tag } from "antd";
 import { useParams } from "react-router-dom";
 import { fetcher } from "../../utils/api";
 import { safeJsonParse } from "../../utils/jsonParser";
 import { showNotification } from "../../utils/Notification";
 
-export const OrderTracking = () => {
-  const [order, setOrder] = useState(null);
+export const InvoiceTracking = () => {
+  const [invoice, setInvoice] = useState(null);
   const [products, setProducts] = useState([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
@@ -30,43 +28,43 @@ export const OrderTracking = () => {
   const [editedStatus, setEditedStatus] = useState("");
   const { id } = useParams();
 
-  const getOrderById = async () => {
+  const getInvoiceById = async () => {
     setLoading(true);
     try {
       const response = await fetcher({
-        pathname: `order/${id}`,
+        pathname: `invoice/${id}`,
         method: "GET",
         data: null,
         auth: true,
       });
       if (response.success) {
         // Parse items JSON string to array using utility function
-        let orderData = response.data;
-        orderData.items = safeJsonParse(orderData.items, []);
-        setOrder(orderData);
-        setEditedStatus(orderData.status);
+        let invoiceData = response.data;
+        invoiceData.items = safeJsonParse(invoiceData.items, []);
+        setInvoice(invoiceData);
+        setEditedStatus(invoiceData.status);
       }
       setLoading(false);
     } catch (error) {
       setLoading(false);
-      showNotification("error", "Failed to fetch order", "");
+      showNotification("error", "Failed to fetch invoice", "");
       console.log(error);
     }
   };
 
-  const updateOrder = async () => {
+  const updateInvoice = async () => {
     try {
       const response = await fetcher({
-        pathname: `order/${id}`,
+        pathname: `invoice/${id}`,
         method: "PUT",
-        data: order,
+        data: invoice,
         auth: true,
       });
-      getOrderById();
+      getInvoiceById();
       if (response.success) {
-        showNotification("success", "Order updated successfully", "");
+        showNotification("success", "Invoice updated successfully", "");
       } else {
-        showNotification("error", "Failed to update order", "");
+        showNotification("error", "Failed to update invoice", "");
       }
     } catch (error) {
       console.log(error);
@@ -93,15 +91,11 @@ export const OrderTracking = () => {
   };
 
   useEffect(() => {
-    getOrderById();
+    getInvoiceById();
   }, []);
   useEffect(() => {
     getProducts();
   }, [search]);
-
-  useEffect(() => {
-    console.log("Order:", order);
-  }, [order]);
 
   const formatDate = (dateString) => {
     if (!dateString) return "";
@@ -115,8 +109,48 @@ export const OrderTracking = () => {
     });
   };
 
-  const getOrderType = () => {
-    return "توصيل"; // Orders are now only for delivery
+  const getInvoiceTypeText = (type) => {
+    const types = {
+      sale: "بيع",
+      saleReturn: "إرجاع بيع",
+      purchase: "شراء",
+      purchaseReturn: "إرجاع شراء",
+    };
+    return types[type] || type;
+  };
+
+  const getInvoiceTypeColor = (type) => {
+    const colors = {
+      sale: "green",
+      saleReturn: "orange",
+      purchase: "blue",
+      purchaseReturn: "red",
+    };
+    return colors[type] || "default";
+  };
+
+  const getStatusText = (status) => {
+    const statuses = {
+      created: "تم الإنشاء",
+      deferred: "مؤجل",
+      partiallyPaid: "مدفوع جزئياً",
+      paid: "مدفوع",
+      cancelled: "ملغي",
+      returned: "مرتجع",
+    };
+    return statuses[status] || status;
+  };
+
+  const getStatusColor = (status) => {
+    const colors = {
+      created: "blue",
+      deferred: "orange",
+      partiallyPaid: "yellow",
+      paid: "green",
+      cancelled: "red",
+      returned: "purple",
+    };
+    return colors[status] || "default";
   };
 
   const calculateTotal = (items) => {
@@ -125,42 +159,6 @@ export const OrderTracking = () => {
       return total + Math.abs(item.quantity) * item.cost;
     }, 0);
   };
-
-  const getCurrentStep = (status) => {
-    switch (status) {
-      case "created":
-        return { step: 0, color: "bg-blue-600" };
-      case "accepted":
-        return { step: 1, color: "bg-yellow-500" };
-      case "shipping":
-        return { step: 2, color: "bg-purple-500" };
-      case "delivered":
-        return { step: 3, color: "bg-green-500" };
-      case "cancelled":
-        return { step: -1, color: "bg-red-500" };
-      default:
-        return { step: 0, color: "bg-gray-400" };
-    }
-  };
-
-  const steps = [
-    {
-      title: "تم الإنشاء",
-      icon: <Clock size={20} />,
-    },
-    {
-      title: "قيد التجهيز",
-      icon: <Package size={20} />,
-    },
-    {
-      title: "تم الشحن",
-      icon: <Truck size={20} />,
-    },
-    {
-      title: "تم التسليم",
-      icon: <CheckCircle size={20} />,
-    },
-  ];
 
   const columns = [
     {
@@ -186,7 +184,7 @@ export const OrderTracking = () => {
             value={record.quantity}
             type="number"
             onChange={(e) =>
-              setOrder((prev) => ({
+              setInvoice((prev) => ({
                 ...prev,
                 items: prev.items.map((item) =>
                   item.id === record.id
@@ -211,7 +209,7 @@ export const OrderTracking = () => {
             size="small"
             value={record?.price}
             onChange={(e) =>
-              setOrder((prev) => ({
+              setInvoice((prev) => ({
                 ...prev,
                 items: prev.items.map((item) =>
                   item.id === record.id
@@ -251,7 +249,7 @@ export const OrderTracking = () => {
           <Popconfirm
             title="هل أنت متأكد من حذف هذا المنتج؟"
             onConfirm={() => {
-              setOrder((prev) => ({
+              setInvoice((prev) => ({
                 ...prev,
                 items: prev.items.filter((item) => item.id !== record.id),
               }));
@@ -268,30 +266,7 @@ export const OrderTracking = () => {
 
   const handleStatusChange = (newStatus) => {
     setEditedStatus(newStatus);
-    setOrder({ ...order, status: newStatus });
-  };
-
-  const stepStyles = {
-    created: {
-      bg: "bg-blue-600",
-      text: "text-blue-600",
-      ring: "ring-blue-100",
-    },
-    accepted: {
-      bg: "bg-yellow-300",
-      text: "text-yellow-600",
-      ring: "ring-yellow-100",
-    },
-    shipping: {
-      bg: "bg-purple-500",
-      text: "text-purple-600",
-      ring: "ring-purple-100",
-    },
-    delivered: {
-      bg: "bg-green-500",
-      text: "text-green-600",
-      ring: "ring-green-100",
-    },
+    setInvoice({ ...invoice, status: newStatus });
   };
 
   if (loading) {
@@ -312,144 +287,100 @@ export const OrderTracking = () => {
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold">متابعة الطلب</h1>
+          <h1 className="text-2xl font-bold">متابعة الفاتورة</h1>
           <div className="flex items-center gap-4">
-            <Button type="primary" onClick={updateOrder}>
+            <Button type="primary" onClick={updateInvoice}>
               حفظ التغييرات
             </Button>
             <Button className="pointer-events-none">
-              رقم الطلب: {order?.id}
+              رقم الفاتورة: {invoice?.invoiceNumber}
             </Button>
           </div>
         </div>
 
-        {order && (
+        {invoice && (
           <>
             <div className="flex justify-between items-center gap-4 mb-4">
               {/* Customer Information */}
               <Card className="bg-white px-6 py-2 w-full h-[220px]">
-                <h2 className="text-xl font-semibold mb-4">معلومات الزبون</h2>
+                <h2 className="text-xl font-semibold mb-4">معلومات العميل</h2>
                 <div className="grid md:grid-cols-2 gap-4">
                   <div className="border-r border-gray-200 pr-4 text-lg">
                     <p className="mb-2 flex items-center">
                       <User size={20} className="ml-2 text-gray-500" />
-                      {order.user?.name || order.supplierName || "غير محدد"}
+                      {invoice.user?.name || "غير محدد"}
                     </p>
                     <p className="mb-2 flex items-center">
                       <Phone size={20} className="ml-2 text-gray-500" />
-
-                      {order.user?.phone || order.supplierPhone || "غير محدد"}
+                      {invoice.user?.phone || "غير محدد"}
                     </p>
                     <p className="flex items-center">
                       <CreditCard size={20} className="ml-2 text-gray-500" />
-                      {calculateTotal(order.items).toLocaleString()} د.ع
+                      {calculateTotal(invoice.items).toLocaleString()} د.ع
                     </p>
                   </div>
                   <div className="pl-4 text-lg">
                     <p className="mb-2 flex items-center">
-                      <MapPin size={20} className="ml-2 text-gray-500" />
-                      {order.address || "غير محدد"}
+                      <FileText size={20} className="ml-2 text-gray-500" />
+                      <Tag color={getInvoiceTypeColor(invoice.type)}>
+                        {getInvoiceTypeText(invoice.type)}
+                      </Tag>
                     </p>
                     <p className="flex items-center">
                       <ShoppingBag size={20} className="ml-2 text-gray-500" />
-                      {getOrderType()}
+                      <Tag color={getStatusColor(invoice.status)}>
+                        {getStatusText(invoice.status)}
+                      </Tag>
                     </p>
                   </div>
                 </div>
               </Card>
-              {/* Order Status and Progress */}
+              {/* Invoice Status and Progress */}
               <Card className="bg-white px-6 py-2 w-full h-[220px]">
                 <div className="flex justify-between mb-4">
-                  <h2 className="text-xl font-semibold">حالة الطلب</h2>
-                  <StatusDropdown
-                    order={order}
-                    onStatusChange={handleStatusChange}
+                  <h2 className="text-xl font-semibold">حالة الفاتورة</h2>
+                  <Select
+                    value={editedStatus}
+                    onChange={handleStatusChange}
+                    style={{ width: 150 }}
+                    options={[
+                      { value: "created", label: "تم الإنشاء" },
+                      { value: "deferred", label: "مؤجل" },
+                      { value: "partiallyPaid", label: "مدفوع جزئياً" },
+                      { value: "paid", label: "مدفوع" },
+                      { value: "cancelled", label: "ملغي" },
+                      { value: "returned", label: "مرتجع" },
+                    ]}
                   />
                 </div>
 
                 <div className="flex items-center gap-2 mb-5">
                   <Clock size={20} className="text-gray-500" />
                   <p className="text-gray-500 flex items-center">
-                    {formatDate(order.createdAt)}
+                    {formatDate(invoice.createdAt)}
                   </p>
                 </div>
 
-                {order.status !== "cancelled" ? (
+                {invoice.status !== "cancelled" ? (
                   <div className="w-full">
-                    {/* Custom Step Indicator */}
-                    <div className="relative flex items-center justify-between">
-                      {steps.map((step, index) => {
-                        const currentStep = getCurrentStep(order.status).step;
-                        const isCompleted = index <= currentStep;
-                        const isCurrent = index === currentStep;
-
-                        // Get colors based on this step
-                        const statusKeys = Object.keys(stepStyles);
-                        const stepKey = statusKeys[index]; // Assumes steps follow same order
-                        const colors = stepStyles[stepKey] || {
-                          bg: "bg-gray-200",
-                          text: "text-gray-500",
-                          ring: "ring-gray-100",
-                        };
-
-                        return (
-                          <div
-                            key={index}
-                            className="flex flex-col items-center z-10"
-                          >
-                            <div
-                              className={`w-10 h-10 rounded-full flex items-center justify-center
-                                          ${
-                                            isCompleted
-                                              ? colors.bg + " text-white"
-                                              : "bg-gray-200"
-                                          }
-                                          ${
-                                            isCurrent
-                                              ? colors.ring + " ring-4"
-                                              : ""
-                                          }`}
-                            >
-                              {step.icon}
-                            </div>
-                            <div className="text-center mt-2">
-                              <p
-                                className={`font-medium ${
-                                  isCompleted ? colors.text : "text-gray-500"
-                                }`}
-                              >
-                                {step.title}
-                              </p>
-                            </div>
-                          </div>
-                        );
-                      })}
-
-                      {/* Progress bar connecting steps */}
-                      <div
-                        className={`absolute top-5 left-0 h-1 bg-gray-200 w-full -z-10`}
-                      ></div>
-                      <div
-                        className={`absolute top-5 left-0 h-1 ${
-                          getCurrentStep(order.status).color
-                        } -z-10`}
-                        style={{
-                          width: `${getCurrentStep(order.status).step}%`,
-                        }}
-                      ></div>
+                    <div className="bg-green-50 p-4 rounded-md border border-green-200 gap-1 text-center flex items-center justify-center">
+                      <CheckCircle size={20} className="text-green-600" />
+                      <p className="text-green-600 font-semibold">
+                        فاتورة {getInvoiceTypeText(invoice.type)}
+                      </p>
                     </div>
                   </div>
                 ) : (
                   <div className="bg-red-50 p-4 rounded-md border border-red-200 gap-1 text-center flex items-center justify-center">
                     <XCircle size={20} className="text-red-600" />
                     <p className="text-red-600 font-semibold">
-                      تم إلغاء هذا الطلب
+                      تم إلغاء هذه الفاتورة
                     </p>
                   </div>
                 )}
               </Card>
             </div>
-            {/* Order Items */}
+            {/* Invoice Items */}
             <Card className="bg-white rounded-lg shadow-sm p-6">
               <div className="flex justify-between items-center mb-4">
                 <div className="flex items-center gap-2">
@@ -458,7 +389,7 @@ export const OrderTracking = () => {
                     المنتجات
                   </h2>
                   <div className="bg-blue-50 text-blue-700 px-3 py-1 rounded-md text-sm font-medium">
-                    {order.items.length} منتج
+                    {invoice.items.length} منتج
                   </div>
                 </div>
                 <Select
@@ -466,7 +397,7 @@ export const OrderTracking = () => {
                   options={products
                     .filter(
                       (product) =>
-                        !order.items.some((item) => item.id === product.id)
+                        !invoice.items.some((item) => item.id === product.id)
                     )
                     .map((product) => ({
                       label: product.name,
@@ -481,7 +412,7 @@ export const OrderTracking = () => {
                       (product) => product.id === value
                     );
                     if (selectedProduct) {
-                      setOrder((prev) => ({
+                      setInvoice((prev) => ({
                         ...prev,
                         items: [
                           ...prev.items,
@@ -499,7 +430,7 @@ export const OrderTracking = () => {
                 />
               </div>
               <Table
-                dataSource={order.items}
+                dataSource={invoice.items}
                 columns={columns}
                 pagination={false}
               />
@@ -509,7 +440,7 @@ export const OrderTracking = () => {
                 <div className="text-lg font-semibold">
                   <span>المجموع الكلي : </span>
                   <span className="text-xl">
-                    {calculateTotal(order.items).toLocaleString()} د.ع
+                    {calculateTotal(invoice.items).toLocaleString()} د.ع
                   </span>
                 </div>
               </div>

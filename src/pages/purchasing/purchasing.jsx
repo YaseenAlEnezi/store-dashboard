@@ -187,33 +187,25 @@ export const Purchasing = () => {
     }
 
     const supplierName = form.getFieldValue("supplierName");
+    const supplierPhone = form.getFieldValue("supplierPhone");
     const notes = form.getFieldValue("notes");
 
     const payload = {
-      supplier: {
-        name: supplierName,
-      },
       items: data.map((item) => ({
         id: item.id,
-        barcode: item.barcode,
-        name: item.name,
         quantity: parseInt(item.quantity),
-        purchasePrice: parseInt(item.purchasePrice),
-        sellingPrice: parseInt(item.sellingPrice),
-        location: item.location,
+        cost: parseInt(item.purchasePrice),
       })),
-      notes: notes,
-      operationType: operationType,
-      currency: currency,
+      supplierName: supplierName,
+      supplierPhone: supplierPhone,
+      totalCost: grandTotal,
     };
 
     console.log(payload);
 
     try {
-      const endpoint = 
-        operationType === "purchase"
-          ? "create-purchase"
-          : "create-purchase-return";
+      const endpoint =
+        operationType === "purchase" ? "purchase" : "purchaseReturn";
       const res = await fetcher({
         pathname: endpoint,
         method: "POST",
@@ -241,9 +233,10 @@ export const Purchasing = () => {
         ]);
         refetch();
       } else {
-        message.error("فشل في إنشاء الفاتورة");
+        message.error(res.msg || "فشل في إنشاء الفاتورة");
       }
     } catch (error) {
+      console.error("Error creating order:", error);
       message.error("فشل في إنشاء الفاتورة");
     }
   };
@@ -437,6 +430,12 @@ export const Purchasing = () => {
               rules={[{ required: true, message: "اسم المورد مطلوب" }]}
             >
               <Input placeholder="اسم المورد" />
+            </Form.Item>
+          </Col>
+
+          <Col xs={24} sm={12} md={6}>
+            <Form.Item label="رقم هاتف المورد" name="supplierPhone">
+              <Input placeholder="رقم هاتف المورد" />
             </Form.Item>
           </Col>
 

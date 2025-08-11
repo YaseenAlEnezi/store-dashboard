@@ -5,7 +5,7 @@ import "./index.css";
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import App from "./App.jsx";
 import About from "./pages/About.jsx";
-import Home from "./pages/Home.jsx";
+import { Home } from "./pages/Home.jsx";
 import { Login } from "./pages/Login.jsx";
 import { ChangePassword } from "./pages/changePassword/changePassword.jsx";
 import { Signout } from "./utils/Signout.js";
@@ -17,7 +17,7 @@ import { BrandPage } from "./pages/brandsPage/brands.jsx";
 import { BannerPage } from "./pages/bannersPage/banners.jsx";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { OnSite } from "./pages/onSite/onSite.jsx";
-import { OrderPage } from "./pages/orderPage/order.jsx";
+import { Order } from "./pages/orderPage/order.jsx";
 import { CreateOrderPage } from "./pages/orderPage/createOrder.jsx";
 import { OrderTracking } from "./pages/orderTracking/orderTracking.jsx";
 
@@ -32,8 +32,12 @@ const router = createBrowserRouter([
     element: <App />,
     children: [
       {
+        path: "/",
+        element: <Home />,
+      },
+      {
         path: "/home",
-        element: <ProductPage />,
+        element: <Home />,
       },
       {
         path: "/about",
@@ -61,7 +65,7 @@ const router = createBrowserRouter([
       },
       {
         path: "/order",
-        element: <OrderPage />,
+        element: <Order />,
       },
       {
         path: "/create-order",

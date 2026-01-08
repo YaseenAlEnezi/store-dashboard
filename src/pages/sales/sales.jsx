@@ -6,6 +6,7 @@ import {
   Form,
   Input,
   InputNumber,
+  Popover,
   Row,
   Select,
   Table,
@@ -15,8 +16,11 @@ import { IoSearchOutline } from "react-icons/io5";
 import { DeleteOutlined } from "@ant-design/icons";
 import { useQuery } from "@tanstack/react-query";
 import { fetcher } from "../../utils/api";
+import { useStore } from "../../utils/stores";
+//add bulk
 
 export const Sales = () => {
+  const { settings } = useStore();
   const [search, setSearch] = useState("");
   const [operationType, setOperationType] = useState("sale"); // sale or return
   const [currency, setCurrency] = useState("IQD");
@@ -26,12 +30,13 @@ export const Sales = () => {
       barcode: "",
       name: "",
       quantity: 1,
-      price: "",
+      price: 0,
       total: 0,
       location: "",
     },
   ]);
   const [form] = Form.useForm();
+  const dollarPrice = settings.dollarPrice;
 
   // Currency options with symbols and names
   const currencyOptions = [
@@ -42,6 +47,37 @@ export const Sales = () => {
   // Get current currency symbol
   const getCurrencySymbol = () => {
     return currencyOptions.find((c) => c.value === currency)?.symbol || "د.ع";
+  };
+
+  // Currency conversion helper functions
+  const convertToIQD = (amount, fromCurrency) => {
+    const validAmount = Number(amount) || 0;
+    const validDollarPrice = Number(dollarPrice) || 1;
+    if (fromCurrency === "USD") {
+      return validAmount * validDollarPrice;
+    }
+    return validAmount;
+  };
+
+  const convertToUSD = (amount, fromCurrency) => {
+    const validAmount = Number(amount) || 0;
+    const validDollarPrice = Number(dollarPrice) || 1;
+    if (fromCurrency === "IQD") {
+      return validAmount / validDollarPrice;
+    }
+    return validAmount;
+  };
+
+  // Convert price for display - always show in selected currency
+  const getDisplayPrice = (price) => {
+    const validPrice = Number(price) || 0;
+    if (currency === "USD") {
+      // If currency is USD, convert IQD price to USD for display
+      const usdPrice = convertToUSD(validPrice, "IQD");
+      return usdPrice.toFixed(2);
+    }
+    // If currency is IQD, show original price
+    return validPrice.toFixed(0);
   };
 
   const {
@@ -83,7 +119,7 @@ export const Sales = () => {
         if (item.key === key) {
           const newItem = { ...item, [field]: value };
 
-          // Calculate total
+          // Calculate total (always in IQD for storage)
           if (field === "quantity" || field === "price") {
             newItem.total =
               (Number(newItem.quantity) || 0) * (Number(newItem.price) || 0);
@@ -159,7 +195,7 @@ export const Sales = () => {
         barcode: "",
         name: "",
         quantity: 1,
-        price: "",
+        price: 0,
         total: 0,
         location: "",
       },
@@ -190,14 +226,16 @@ export const Sales = () => {
         phone: customerPhone,
       },
       totalCost: grandTotal,
+      type: operationType === "sale" ? "sale" : "saleReturn",
+      currency: currency,
+      dollarPrice: dollarPrice,
     };
 
     console.log(payload);
 
     try {
-      const endpoint = operationType === "sale" ? "sales" : "salesReturn";
       const res = await fetcher({
-        pathname: endpoint,
+        pathname: "create-invoice",
         method: "POST",
         data: payload,
         auth: true,
@@ -236,7 +274,12 @@ export const Sales = () => {
       dataIndex: "key",
       key: "key",
       width: 50,
-      render: (text, record, index) => index + 1,
+      render: (text, record, index) => (
+        console.log(record?.buyingPrice),
+        <Popover content={record.buyingPrice} title={null}>
+          <p>{index + 1}</p>
+        </Popover>
+      ),
     },
     {
       title: "المادة",
@@ -289,11 +332,13 @@ export const Sales = () => {
           size="small"
           type="number"
           min={1}
-          value={record.quantity}
+          value={record.quantity || ""}
           onChange={(e) =>
             handleInputChange(e.target.value, record.key, "quantity")
           }
           placeholder="الكمية"
+          autoFocus={false}
+          onFocus={(e) => e.target.select()}
         />
       ),
     },
@@ -314,11 +359,26 @@ export const Sales = () => {
           size="small"
           type="number"
           min={0}
-          value={record.price}
-          onChange={(e) =>
-            handleInputChange(e.target.value, record.key, "price")
+          value={
+            currency === "USD"
+              ? record.price
+                ? getDisplayPrice(record.price)
+                : ""
+              : record.price || ""
           }
+          onChange={(e) => {
+            const inputValue = e.target.value;
+            if (currency === "USD") {
+              // Convert USD input back to IQD for storage
+              const iqdPrice = convertToIQD(parseFloat(inputValue) || 0, "USD");
+              handleInputChange(iqdPrice, record.key, "price");
+            } else {
+              handleInputChange(inputValue, record.key, "price");
+            }
+          }}
           placeholder="السعر"
+          autoFocus={false}
+          onFocus={(e) => e.target.select()}
         />
       ),
     },
@@ -329,9 +389,14 @@ export const Sales = () => {
       width: 120,
       render: (text, record) => {
         const total = Number(record.quantity || 0) * Number(record.price || 0);
+        const displayTotal =
+          currency === "USD" ? convertToUSD(total, "IQD") : total;
         return (
           <span className="text-nowrap font-semibold">
-            {total.toFixed(2)} {getCurrencySymbol()}
+            {isNaN(displayTotal)
+              ? "0"
+              : displayTotal.toFixed(currency === "USD" ? 2 : 0)}{" "}
+            {getCurrencySymbol()}
           </span>
         );
       },
@@ -346,7 +411,7 @@ export const Sales = () => {
           icon={<DeleteOutlined />}
           onClick={() => deleteRow(record.key)}
           onKeyDown={(e) => {
-            if (e.key === "Tab" && !record.name) {
+            if (e.key === "Tab" && record.name && record.barcode) {
               addEmptyRow();
             } else {
               e.preventDefault();
@@ -465,7 +530,14 @@ export const Sales = () => {
                   </Table.Summary.Cell>
                   <Table.Summary.Cell index={1} colSpan={2}>
                     <span className="text-lg font-bold">
-                      {grandTotal.toFixed(2)} {getCurrencySymbol()}
+                      {currency === "USD"
+                        ? isNaN(convertToUSD(grandTotal, "IQD"))
+                          ? "0.00"
+                          : convertToUSD(grandTotal, "IQD").toFixed(2)
+                        : isNaN(grandTotal)
+                        ? "0"
+                        : grandTotal.toFixed(0)}{" "}
+                      {getCurrencySymbol()}
                     </span>
                   </Table.Summary.Cell>
                 </Table.Summary.Row>

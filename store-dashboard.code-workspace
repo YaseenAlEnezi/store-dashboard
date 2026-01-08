@@ -1,0 +1,13 @@
+{
+  "folders": [
+    {
+      "name": "store-Server",
+      "path": "../store-Server"
+    },
+    {
+      "name": "store-dashboard",
+      "path": "."
+    }
+  ],
+  "settings": {}
+}

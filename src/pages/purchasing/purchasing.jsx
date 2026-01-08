@@ -15,10 +15,11 @@ import { IoSearchOutline } from "react-icons/io5";
 import { DeleteOutlined } from "@ant-design/icons";
 import { useQuery } from "@tanstack/react-query";
 import { fetcher } from "../../utils/api";
+//add bulk
 
 export const Purchasing = () => {
   const [search, setSearch] = useState("");
-  const [operationType, setOperationType] = useState("purchase"); // purchase or return
+  const [operationType, setOperationType] = useState("purchase"); // purchase or purchaseReturn
   const [currency, setCurrency] = useState("IQD");
   const [data, setData] = useState([
     {
@@ -95,7 +96,7 @@ export const Purchasing = () => {
                 (Number(newItem.quantity) || 0) *
                 (Number(newItem.purchasePrice) || 0);
             } else {
-              // For returns, we might want to show the return value
+              // For purchase returns, calculate total
               newItem.total =
                 (Number(newItem.quantity) || 0) *
                 (Number(newItem.purchasePrice) || 0);
@@ -196,18 +197,20 @@ export const Purchasing = () => {
         quantity: parseInt(item.quantity),
         cost: parseInt(item.purchasePrice),
       })),
-      supplierName: supplierName,
-      supplierPhone: supplierPhone,
+      user: {
+        name: supplierName,
+        phone: supplierPhone || "07700000000",
+      },
       totalCost: grandTotal,
+      type: operationType === "purchase" ? "purchase" : "purchaseReturn",
+      currency: currency,
     };
 
     console.log(payload);
 
     try {
-      const endpoint =
-        operationType === "purchase" ? "purchase" : "purchaseReturn";
       const res = await fetcher({
-        pathname: endpoint,
+        pathname: "create-invoice",
         method: "POST",
         data: payload,
         auth: true,
@@ -408,12 +411,12 @@ export const Purchasing = () => {
             فاتورة مشتريات
           </button>
           <button
-            className=" px-4 py-2 rounded-l-xl"
-            onClick={() => changeTab("return")}
+            className="px-4 py-2 rounded-l-xl"
+            onClick={() => changeTab("purchaseReturn")}
             style={{
               backgroundColor:
-                operationType === "return" ? "#FFED03" : "#FAFAFA",
-              opacity: operationType === "return" ? 1 : 0.5,
+                operationType === "purchaseReturn" ? "#FFED03" : "#FAFAFA",
+              opacity: operationType === "purchaseReturn" ? 1 : 0.5,
             }}
           >
             إرجاع مشتريات
@@ -504,7 +507,7 @@ export const Purchasing = () => {
           <Button type="primary" htmlType="submit">
             {operationType === "purchase"
               ? "حفظ فاتورة الشراء"
-              : "حفظ فاتورة الإرجاع"}
+              : "حفظ فاتورة إرجاع الشراء"}
           </Button>
         </div>
       </Form>

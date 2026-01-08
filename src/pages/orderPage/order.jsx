@@ -303,7 +303,7 @@ export const Order = () => {
               onChange={setOrderTypeFilter}
               style={{ width: "100%" }}
               options={[
-                { value: "all", label: "جميع الأنواع" },
+                { value: "all", label: "الكل" },
                 { value: "sale", label: "بيع" },
                 { value: "saleReturn", label: "إرجاع بيع" },
                 { value: "purchase", label: "شراء" },

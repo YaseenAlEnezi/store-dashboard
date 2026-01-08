@@ -3,6 +3,30 @@
 @tailwind utilities;
 
 * {
-  font-family: "Noto Kufi Arabic", sans-serif;
+  font-family: "Noto Kufi Arabic", "Tajawal", "Arial", sans-serif;
   font-weight: 400;
+}
+
+body {
+  font-family: "Noto Kufi Arabic", "Tajawal", "Arial", sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Ensure Ant Design components use Arabic font */
+.ant-typography,
+.ant-btn,
+.ant-input,
+.ant-select,
+.ant-table,
+.ant-card,
+.ant-modal,
+.ant-form,
+.ant-menu,
+.ant-dropdown,
+.ant-tooltip,
+.ant-popover,
+.ant-message,
+.ant-notification {
+  font-family: "Noto Kufi Arabic", "Tajawal", "Arial", sans-serif !important;
 }

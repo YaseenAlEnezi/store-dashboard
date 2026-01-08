@@ -13,11 +13,31 @@ import {
   Trash2,
   FileText,
 } from "lucide-react";
-import { Button, Card, Input, Popconfirm, Select, Table, Tag } from "antd";
-import { useParams } from "react-router-dom";
+import {
+  Button,
+  Card,
+  Input,
+  Popconfirm,
+  Select,
+  Table,
+  Tag,
+  Space,
+  Descriptions,
+  Badge,
+  message,
+} from "antd";
+import {
+  PrinterOutlined,
+  DownloadOutlined,
+  ArrowLeftOutlined,
+  ReloadOutlined,
+} from "@ant-design/icons";
+import { useParams, useNavigate } from "react-router-dom";
 import { fetcher } from "../../utils/api";
 import { safeJsonParse } from "../../utils/jsonParser";
 import { showNotification } from "../../utils/Notification";
+import { Container } from "../../components/Container";
+import dayjs from "dayjs";
 
 export const InvoiceTracking = () => {
   const [invoice, setInvoice] = useState(null);
@@ -27,6 +47,7 @@ export const InvoiceTracking = () => {
   const [editID, setEditID] = useState(null);
   const [editedStatus, setEditedStatus] = useState("");
   const { id } = useParams();
+  const navigate = useNavigate();
 
   const getInvoiceById = async () => {
     setLoading(true);
@@ -60,14 +81,149 @@ export const InvoiceTracking = () => {
         data: invoice,
         auth: true,
       });
-      getInvoiceById();
       if (response.success) {
-        showNotification("success", "Invoice updated successfully", "");
+        showNotification("success", "تم تحديث الفاتورة بنجاح", "");
+        getInvoiceById();
       } else {
-        showNotification("error", "Failed to update invoice", "");
+        showNotification("error", "فشل في تحديث الفاتورة", "");
       }
     } catch (error) {
       console.log(error);
+      showNotification("error", "فشل في تحديث الفاتورة", "");
+    }
+  };
+
+  const updateInvoiceStatus = async (newStatus) => {
+    try {
+      const response = await fetcher({
+        pathname: `invoice/status/${id}`,
+        method: "PUT",
+        data: { status: newStatus },
+        auth: true,
+      });
+      if (response.success) {
+        showNotification("success", "تم تحديث حالة الفاتورة بنجاح", "");
+        setEditedStatus(newStatus);
+        getInvoiceById();
+      } else {
+        showNotification("error", "فشل في تحديث حالة الفاتورة", "");
+      }
+    } catch (error) {
+      console.log(error);
+      showNotification("error", "فشل في تحديث حالة الفاتورة", "");
+    }
+  };
+
+  const handlePrintInvoice = () => {
+    if (!invoice) return;
+    const printWindow = window.open("", "_blank");
+    const invoiceContent = `
+      <!DOCTYPE html>
+      <html dir="rtl" lang="ar">
+      <head>
+        <meta charset="UTF-8">
+        <title>فاتورة ${invoice.invoiceNumber}</title>
+        <style>
+          body { font-family: Arial, sans-serif; padding: 20px; direction: rtl; }
+          .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #000; padding-bottom: 20px; }
+          .info { margin-bottom: 20px; display: flex; justify-content: space-between; }
+          .info-section { flex: 1; }
+          table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+          th, td { border: 1px solid #ddd; padding: 12px; text-align: right; }
+          th { background-color: #f2f2f2; font-weight: bold; }
+          .total { text-align: left; font-weight: bold; margin-top: 20px; font-size: 18px; }
+          .status { display: inline-block; padding: 5px 10px; border-radius: 5px; margin: 5px 0; }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <h1>فاتورة ${invoice.invoiceNumber}</h1>
+          <p>${getInvoiceTypeText(invoice.type)}</p>
+        </div>
+        <div class="info">
+          <div class="info-section">
+            <p><strong>العميل/المورد:</strong> ${
+              invoice.user?.name || "غير محدد"
+            }</p>
+            <p><strong>الهاتف:</strong> ${invoice.user?.phone || "غير محدد"}</p>
+            <p><strong>الحالة:</strong> <span class="status">${getStatusText(
+              invoice.status
+            )}</span></p>
+          </div>
+          <div class="info-section">
+            <p><strong>تاريخ الإنشاء:</strong> ${formatDate(
+              invoice.createdAt
+            )}</p>
+            ${
+              invoice.address
+                ? `<p><strong>العنوان:</strong> ${invoice.address}</p>`
+                : ""
+            }
+            ${
+              invoice.currency
+                ? `<p><strong>العملة:</strong> ${invoice.currency}</p>`
+                : ""
+            }
+          </div>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>المنتج</th>
+              <th>الكمية</th>
+              <th>السعر</th>
+              <th>المجموع</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${
+              Array.isArray(invoice.items)
+                ? invoice.items
+                    .map((item) => {
+                      const productName =
+                        item.product?.name || item.name || "منتج";
+                      const quantity = Math.abs(item.quantity || 0);
+                      const price = item.cost || item.price || 0;
+                      const total = quantity * price;
+                      return `
+                <tr>
+                  <td>${productName}</td>
+                  <td>${quantity}</td>
+                  <td>${price.toLocaleString()} د.ع</td>
+                  <td>${total.toLocaleString()} د.ع</td>
+                </tr>
+              `;
+                    })
+                    .join("")
+                : ""
+            }
+          </tbody>
+        </table>
+        <div class="total">
+          <p>المبلغ الإجمالي: ${invoice.totalCost?.toLocaleString()} د.ع</p>
+        </div>
+      </body>
+      </html>
+    `;
+    printWindow.document.write(invoiceContent);
+    printWindow.document.close();
+    printWindow.print();
+  };
+
+  const handleDownloadInvoice = async () => {
+    try {
+      const res = await fetcher({
+        pathname: `invoice/${id}/download`,
+        method: "GET",
+        auth: true,
+      });
+      if (res.success) {
+        message.success("تم بدء تحميل الفاتورة");
+      } else {
+        message.error(res.msg || "فشل في تحميل الفاتورة");
+      }
+    } catch (error) {
+      message.error("فشل في تحميل الفاتورة");
     }
   };
 
@@ -166,6 +322,8 @@ export const InvoiceTracking = () => {
       dataIndex: ["product", "name"],
       key: "name",
       width: 200,
+      render: (text, record) =>
+        record.product?.name || record.name || "منتج غير معروف",
     },
     {
       title: "الموقع",
@@ -266,7 +424,7 @@ export const InvoiceTracking = () => {
 
   const handleStatusChange = (newStatus) => {
     setEditedStatus(newStatus);
-    setInvoice({ ...invoice, status: newStatus });
+    updateInvoiceStatus(newStatus);
   };
 
   if (loading) {
@@ -283,19 +441,47 @@ export const InvoiceTracking = () => {
   }
 
   return (
-    <div className="bg-gray-50 min-h-screen p-6">
-      <div className="max-w-6xl mx-auto">
+    <Container>
+      <div className="mb-6">
         {/* Header */}
         <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold">متابعة الفاتورة</h1>
           <div className="flex items-center gap-4">
+            <Button
+              icon={<ArrowLeftOutlined />}
+              onClick={() => navigate("/invoices")}
+            >
+              العودة للفواتير
+            </Button>
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">
+                متابعة الفاتورة
+              </h1>
+              {invoice && (
+                <p className="text-gray-500 mt-1">
+                  رقم الفاتورة:{" "}
+                  <span className="font-semibold">{invoice.invoiceNumber}</span>
+                </p>
+              )}
+            </div>
+          </div>
+          <Space>
+            <Button
+              icon={<ReloadOutlined />}
+              onClick={getInvoiceById}
+              loading={loading}
+            >
+              تحديث
+            </Button>
+            <Button icon={<PrinterOutlined />} onClick={handlePrintInvoice}>
+              طباعة
+            </Button>
+            <Button icon={<DownloadOutlined />} onClick={handleDownloadInvoice}>
+              تحميل
+            </Button>
             <Button type="primary" onClick={updateInvoice}>
               حفظ التغييرات
             </Button>
-            <Button className="pointer-events-none">
-              رقم الفاتورة: {invoice?.invoiceNumber}
-            </Button>
-          </div>
+          </Space>
         </div>
 
         {invoice && (
@@ -448,6 +634,6 @@ export const InvoiceTracking = () => {
           </>
         )}
       </div>
-    </div>
+    </Container>
   );
 };

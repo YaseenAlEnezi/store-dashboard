@@ -23,6 +23,10 @@ import { OrderTracking } from "./pages/orderTracking/orderTracking.jsx";
 
 import { Purchasing } from "./pages/purchasing/purchasing.jsx";
 import { Sales } from "./pages/sales/sales.jsx";
+import { Invoices } from "./pages/invoices";
+import { Accounting } from "./pages/accounting";
+import { InvoiceTracking } from "./pages/invoiceTracking/invoiceTracking.jsx";
+import { Reports } from "./pages/reports/reports.jsx";
 
 const queryClient = new QueryClient();
 
@@ -87,6 +91,22 @@ const router = createBrowserRouter([
         path: "/sales",
         element: <Sales />,
       },
+      {
+        path: "/invoices",
+        element: <Invoices />,
+      },
+      {
+        path: "/invoiceTracking/:id",
+        element: <InvoiceTracking />,
+      },
+      {
+        path: "/accounting",
+        element: <Accounting />,
+      },
+      {
+        path: "/reports",
+        element: <Reports />,
+      },
     ],
   },
   {
@@ -110,12 +130,38 @@ ReactDOM.createRoot(document.getElementById("root")).render(
         token: {
           colorPrimary: "#000000",
           colorPrimaryHover: "#E6D900",
+          fontFamily: '"Noto Kufi Arabic", "Tajawal", "Arial", sans-serif',
         },
         components: {
           Button: {
             colorPrimary: "#FFED03",
             colorPrimaryHover: "#E6D900",
             colorTextLightSolid: "#000000",
+            fontFamily: '"Noto Kufi Arabic", "Tajawal", "Arial", sans-serif',
+          },
+          Typography: {
+            fontFamily: '"Noto Kufi Arabic", "Tajawal", "Arial", sans-serif',
+          },
+          Input: {
+            fontFamily: '"Noto Kufi Arabic", "Tajawal", "Arial", sans-serif',
+          },
+          Select: {
+            fontFamily: '"Noto Kufi Arabic", "Tajawal", "Arial", sans-serif',
+          },
+          Table: {
+            fontFamily: '"Noto Kufi Arabic", "Tajawal", "Arial", sans-serif',
+          },
+          Card: {
+            fontFamily: '"Noto Kufi Arabic", "Tajawal", "Arial", sans-serif',
+          },
+          Modal: {
+            fontFamily: '"Noto Kufi Arabic", "Tajawal", "Arial", sans-serif',
+          },
+          Form: {
+            fontFamily: '"Noto Kufi Arabic", "Tajawal", "Arial", sans-serif',
+          },
+          Menu: {
+            fontFamily: '"Noto Kufi Arabic", "Tajawal", "Arial", sans-serif',
           },
         },
       }}

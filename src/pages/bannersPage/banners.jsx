@@ -1,6 +1,14 @@
 import React, { useEffect, useState } from "react";
 import { Container } from "../../components/Container";
-import { Button, Table, Input, Popconfirm, Typography, Pagination } from "antd";
+import {
+  Button,
+  Table,
+  Input,
+  Popconfirm,
+  Typography,
+  Pagination,
+  Switch,
+} from "antd";
 import { showNotification } from "../../utils/Notification";
 import { fetcher, IMAGE_URL } from "../../utils/api";
 import { AddModal } from "./modal/modal";
@@ -84,6 +92,24 @@ export const BannerPage = () => {
     }
   };
 
+  const toggleDisabled = async (id) => {
+    try {
+      const response = await fetcher({
+        pathname: `banner/${id}/toggle`,
+        method: "PATCH",
+        data: null,
+        auth: true,
+      });
+      if (response) {
+        getBanner();
+      } else {
+        console.log(response);
+      }
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
   useEffect(() => {
     getBanner();
   }, [page, pageSize, search]);
@@ -155,6 +181,14 @@ export const BannerPage = () => {
       key: "priority",
       render: (text, record) => (
         <Typography.Text strong>{text}</Typography.Text>
+      ),
+    },
+    {
+      title: "عرض",
+      dataIndex: "disabled",
+      key: "disabled",
+      render: (text, record) => (
+        <Switch checked={!text} onChange={() => toggleDisabled(record.id)} />
       ),
     },
     {

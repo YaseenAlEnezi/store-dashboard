@@ -14,27 +14,72 @@ import { Container } from "./Container.jsx";
 import { useStore } from "../utils/stores.js";
 import { Signout } from "../utils/Signout.js";
 import { useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import { fetcher } from "../utils/api.js";
+import { useState } from "react";
+import SettingsModal from "./SettingsModal.jsx";
 
 export default function Navbar() {
-  const { setUser } = useStore();
+  const { setUser, setSettings } = useStore();
   const name = JSON.parse(localStorage.getItem("user"));
   const navigate = useNavigate();
   const currentRoute = window.location.pathname;
+  const [showSettings, setShowSettings] = useState(false);
+  const {
+    data: settings,
+    isLoading: settingsLoading,
+    refetch: refetchSettings,
+  } = useQuery({
+    queryKey: ["settings"],
+    queryFn: async () => {
+      const response = await fetcher({
+        pathname: "/settings",
+        method: "GET",
+        auth: true,
+      });
+      setSettings(response);
+      return response;
+    },
+  });
+
+  const handleUpdateSettings = async (updatedSettings) => {
+    try {
+      // Update each setting individually
+      for (const setting of updatedSettings) {
+        await fetcher({
+          pathname: "/settings",
+          method: "PUT",
+          auth: true,
+          body: {
+            id: setting.id,
+            value: setting.value,
+          },
+        });
+      }
+
+      // Refetch settings to get updated data
+      await refetchSettings();
+    } catch (error) {
+      console.error("Error updating settings:", error);
+      throw error;
+    }
+  };
 
   const navItems = [
-    // {
-    //   name: "ألفواتير",
-    //   href: "/onSite",
-    //   current: true,
-    // },
     {
-      name: "المشتريات",
-      href: "/purchasing",
+      name: "الفواتير",
+      href: "/invoices",
       current: true,
     },
     {
       name: "المبيعات",
       href: "/sales",
+      current: true,
+    },
+
+    {
+      name: "المشتريات",
+      href: "/purchasing",
       current: true,
     },
     {
@@ -70,6 +115,11 @@ export default function Navbar() {
     {
       name: "المستخدمين",
       href: "/users",
+      current: true,
+    },
+    {
+      name: "التقارير",
+      href: "/reports",
       current: true,
     },
   ];
@@ -121,11 +171,6 @@ export default function Navbar() {
                   <div className="relative flex items-center gap-2">
                     <span className="absolute -inset-1.5" />
                     <span>{name || "User"}</span>
-                    <img
-                      alt=""
-                      src={"https://i.pravatar.cc/150"}
-                      className="size-8 rounded-full"
-                    />
                   </div>
                 </MenuButton>
               </div>
@@ -141,6 +186,15 @@ export default function Navbar() {
                     تغيير كلمة المرور
                   </a>
                 </MenuItem>
+                <MenuItem>
+                  <a
+                    onClick={() => setShowSettings(true)}
+                    className="block px-4 py-2 text-sm text-gray-700 data-[focus]:bg-gray-100 data-[focus]:outline-none"
+                  >
+                    الاعدادات
+                  </a>
+                </MenuItem>
+
                 <MenuItem>
                   <a
                     onClick={() => Signout({ setUser, navigate })}
@@ -188,13 +242,7 @@ export default function Navbar() {
         </div>
         <div className="border-t border-gray-200 pb-3 pt-4">
           <div className="flex items-center px-4">
-            <div className="shrink-0">
-              <img
-                alt=""
-                src={"https://i.pravatar.cc/150"}
-                className="size-10 rounded-full"
-              />
-            </div>
+            <div className="shrink-0"></div>
             <div className="mr-3">
               <div className="text-base font-medium text-gray-800">
                 {name || "user"}
@@ -233,6 +281,12 @@ export default function Navbar() {
           </div>
         </div>
       </DisclosurePanel>
+      <SettingsModal
+        show={showSettings}
+        setShow={setShowSettings}
+        settings={settings}
+        onUpdate={handleUpdateSettings}
+      />
     </Disclosure>
   );
 }

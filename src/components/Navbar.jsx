@@ -82,11 +82,11 @@ export default function Navbar() {
       href: "/purchasing",
       current: true,
     },
-    {
-      name: "الفواتير",
-      href: "/order",
-      current: true,
-    },
+    // {
+    //   name: "الفواتير",
+    //   href: "/order",
+    //   current: true,
+    // },
     {
       name: "المنتجات",
       href: "/product",
